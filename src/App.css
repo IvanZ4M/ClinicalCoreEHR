@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* Configuración de Temas y Colores Base */
+:root {
+  --primary-blue: #1e3a8a; /* Azul marino del logo */
+  --accent-blue: #3b82f6;  /* Azul brillante para botones */
+  --bg-main: #f8fafc;      /* Gris muy claro para el fondo */
+  --border-color: #e2e8f0; /* Color de bordes de tarjetas */
+  --text-main: #1e293b;    /* Color de texto principal */
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Estilos de Contenedores y Layout */
+.layout-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+/* Estilización de Tarjetas (Cards) */
+.stat-card {
+  @apply bg-white p-6 rounded-xl border border-slate-200 shadow-sm transition-all;
+}
+
+.stat-card:hover {
+  @apply shadow-md border-blue-100;
+}
+
+/* Tabla de Citas (Mockup Style) */
+.appointments-table {
+  @apply w-full text-left border-collapse;
+}
+
+.appointments-table th {
+  @apply bg-slate-50 p-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100;
+}
+
+.appointments-table td {
+  @apply p-4 border-b border-slate-50 text-sm align-middle;
+}
+
+/* Estados (Badges) */
+.status-badge {
+  @apply px-2.5 py-0.5 rounded-full text-xs font-semibold;
+}
+
+.status-registered { @apply bg-green-100 text-green-700; }
+.status-delayed { @apply bg-orange-100 text-orange-700; }
+.status-pending { @apply bg-slate-100 text-slate-600; }
+
+/* Barra Lateral (Sidebar Custom) */
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-3 text-slate-600 rounded-lg transition-colors hover:bg-slate-50;
+}
+
+.sidebar-link-active {
+  @apply bg-blue-50 text-blue-800 font-bold border-l-4 border-blue-800 rounded-l-none;
+}
+
+/* Alertas Críticas */
+.alert-card {
+  @apply bg-red-50 border border-red-100 rounded-xl p-6;
+}
+
+.alert-item {
+  @apply bg-white p-3 rounded-lg border border-red-50 mb-3 last:mb-0;
+}
+
+/* Scrollbar Personalizado para Electron */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Utilidades de Interfaz de Usuario Médica */
+.diagnostico-progress-bar {
+  @apply h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-1;
+}
+
+.diagnostico-fill {
+  @apply h-full bg-blue-600 rounded-full transition-all duration-500;
+}
