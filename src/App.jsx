@@ -9,6 +9,7 @@ import PatientDetail from './pages/PatientDetail'
 import NewConsultation from './pages/NewConsultation'
 import Reports from './pages/Reports'
 import Users from './pages/Users'
+import Settings from './pages/Settings'
 
 function RutaProtegida({ children }) {
   const { usuario, cargando } = useAuth()
@@ -87,7 +88,7 @@ export default function App() {
                     <Route path="/pacientes/:id"      element={<PatientDetail />}                                    errorElement={<ErrorPagina />} />
                     <Route path="/citas"              element={<Appointments />}                                     errorElement={<ErrorPagina />} />
                     <Route path="/informes" element={<Reports />} errorElement={<ErrorPagina />} />
-                    <Route path="/configuracion"      element={<PlaceholderModulo nombre="Configuración" />}        errorElement={<ErrorPagina />} />
+                    <Route path="/configuracion" element={<Settings />} errorElement={<ErrorPagina />} />
                     <Route path="/usuarios" element={<Users />} errorElement={<ErrorPagina />} />
                     <Route path="*"                   element={<Navigate to="/" replace />} />
                     <Route path="/consulta/nueva" element={<NewConsultation />} errorElement={<ErrorPagina />} />
