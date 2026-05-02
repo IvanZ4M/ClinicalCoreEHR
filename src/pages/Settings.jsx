@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
-const TABS = ['Consultorio', 'Mi Perfil', 'Seguridad']
+const TABS = ['Apariencia', 'Consultorio', 'Mi Perfil', 'Seguridad']
+
+const ACCENT_PRESETS = [
+  { label: 'Azul',     h: 214 },
+  { label: 'Cielo',    h: 200 },
+  { label: 'Teal',     h: 175 },
+  { label: 'Verde',    h: 145 },
+  { label: 'Violeta',  h: 285 },
+  { label: 'Rosa',     h: 340 },
+  { label: 'Naranja',  h: 35  },
+  { label: 'Ámbar',    h: 65  },
+]
 
 function calcularFortaleza(password) {
   let puntos = 0
@@ -16,7 +28,8 @@ function calcularFortaleza(password) {
 
 export default function Settings() {
   const { usuario } = useAuth()
-  const [tabActiva, setTabActiva] = useState('Consultorio')
+  const { theme, setTheme, isDark, accentH, setAccentH, density, setDensity, radius, setRadius, sidebar, setSidebar } = useTheme()
+  const [tabActiva, setTabActiva] = useState('Apariencia')
 
   const [consultorio, setConsultorio] = useState({
     nombre: '', direccion: '', telefono: '', email: '', horario: '', especialidades: '',
@@ -130,6 +143,173 @@ export default function Settings() {
           </button>
         ))}
       </div>
+
+      {/* ── TAB: Apariencia ────────────────────────────────────────── */}
+      {tabActiva === 'Apariencia' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          {/* Tema */}
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <SeccionApariencia icon={<I.Sun width={15} height={15} />} titulo="Modo de color">
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {[
+                  { v: 'light',  label: 'Claro',   icon: <I.Sun  width={14} height={14} /> },
+                  { v: 'dark',   label: 'Oscuro',  icon: <I.Moon width={14} height={14} /> },
+                  { v: 'system', label: 'Sistema', icon: <I.Kbd  width={14} height={14} /> },
+                ].map(opt => (
+                  <button key={opt.v} onClick={() => setTheme(opt.v)}
+                    style={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                      padding: '0.75rem 0.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: theme === opt.v ? '2px solid var(--accent)' : '2px solid var(--border)',
+                      background: theme === opt.v ? 'var(--accent-dim)' : 'var(--bg)',
+                      color: theme === opt.v ? 'var(--accent)' : 'var(--text-2)',
+                      transition: 'all 0.15s',
+                    }}>
+                    {opt.icon}
+                    <span style={{ fontSize: '0.75rem', fontWeight: theme === opt.v ? 600 : 400 }}>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </SeccionApariencia>
+          </div>
+
+          {/* Color de énfasis */}
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <SeccionApariencia icon={<I.Drop width={15} height={15} />} titulo="Color de énfasis">
+              <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
+                {ACCENT_PRESETS.map(p => {
+                  const active = Math.abs(accentH - p.h) < 8
+                  return (
+                    <button key={p.h} onClick={() => setAccentH(p.h)}
+                      title={p.label}
+                      style={{
+                        width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', border: 'none', padding: 0,
+                        background: `oklch(55% 0.20 ${p.h})`,
+                        outline: active ? `3px solid oklch(55% 0.20 ${p.h})` : '3px solid transparent',
+                        outlineOffset: 2,
+                        boxShadow: active ? `0 0 0 2px var(--bg-elev)` : 'none',
+                        transition: 'transform 0.15s, outline 0.15s',
+                        transform: active ? 'scale(1.15)' : 'scale(1)',
+                      }} />
+                  )
+                })}
+              </div>
+              <div style={{ marginTop: '0.25rem' }}>
+                <label className="field-label">Matiz personalizado ({accentH}°)</label>
+                <input type="range" min={0} max={359} value={accentH} onChange={e => setAccentH(e.target.value)}
+                  style={{ width: '100%', accentColor: `oklch(55% 0.20 ${accentH})`, cursor: 'pointer' }} />
+              </div>
+            </SeccionApariencia>
+          </div>
+
+          {/* Densidad + Radio en grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+            {/* Densidad */}
+            <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <SeccionApariencia icon={<I.Filter width={14} height={14} />} titulo="Densidad">
+                {[
+                  { v: 'compact',   label: 'Compacto',  desc: 'Más información en pantalla' },
+                  { v: 'regular',   label: 'Regular',   desc: 'Balance por defecto' },
+                  { v: 'spacious',  label: 'Espacioso', desc: 'Mayor legibilidad' },
+                ].map(opt => (
+                  <button key={opt.v} onClick={() => setDensity(opt.v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.625rem',
+                      padding: '0.625rem 0.75rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: density === opt.v ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                      background: density === opt.v ? 'var(--accent-dim)' : 'var(--bg)',
+                      textAlign: 'left', width: '100%',
+                      transition: 'all 0.15s',
+                    }}>
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                      background: density === opt.v ? 'var(--accent)' : 'var(--border)',
+                      transition: 'background 0.15s',
+                    }} />
+                    <div>
+                      <p style={{ fontSize: '0.8125rem', fontWeight: density === opt.v ? 600 : 400, color: density === opt.v ? 'var(--accent)' : 'var(--text)' }}>
+                        {opt.label}
+                      </p>
+                      <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 1 }}>{opt.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </SeccionApariencia>
+            </div>
+
+            {/* Radio de bordes */}
+            <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <SeccionApariencia icon={<I.Edit width={14} height={14} />} titulo="Radio de bordes">
+                {[
+                  { v: 4,  label: 'Cuadrado',   preview: 4  },
+                  { v: 8,  label: 'Redondeado',  preview: 8  },
+                  { v: 12, label: 'Suave',        preview: 12 },
+                  { v: 16, label: 'Circular',     preview: 16 },
+                ].map(opt => (
+                  <button key={opt.v} onClick={() => setRadius(opt.v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: radius === opt.v ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                      background: radius === opt.v ? 'var(--accent-dim)' : 'var(--bg)',
+                      textAlign: 'left', width: '100%',
+                      transition: 'all 0.15s',
+                    }}>
+                    <div style={{
+                      width: 22, height: 22, flexShrink: 0,
+                      background: radius === opt.v ? 'var(--accent)' : 'var(--border)',
+                      borderRadius: opt.preview,
+                      transition: 'background 0.15s',
+                    }} />
+                    <span style={{ fontSize: '0.8125rem', fontWeight: radius === opt.v ? 600 : 400, color: radius === opt.v ? 'var(--accent)' : 'var(--text)' }}>
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </SeccionApariencia>
+            </div>
+          </div>
+
+          {/* Barra lateral */}
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <SeccionApariencia icon={<I.SidebarOpen width={15} height={15} />} titulo="Ancho de barra lateral">
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {[
+                  { v: 'rail',    label: 'Compacta', w: 52  },
+                  { v: 'regular', label: 'Regular',  w: 240 },
+                  { v: 'wide',    label: 'Amplia',   w: 280 },
+                ].map(opt => (
+                  <button key={opt.v} onClick={() => setSidebar(opt.v)}
+                    style={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                      padding: '0.875rem 0.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: sidebar === opt.v ? '2px solid var(--accent)' : '2px solid var(--border)',
+                      background: sidebar === opt.v ? 'var(--accent-dim)' : 'var(--bg)',
+                      transition: 'all 0.15s',
+                    }}>
+                    <div style={{ display: 'flex', gap: 3, alignItems: 'flex-start', height: 24 }}>
+                      <div style={{ width: opt.v === 'rail' ? 6 : opt.v === 'regular' ? 10 : 14, height: '100%', background: sidebar === opt.v ? 'var(--accent)' : 'var(--border)', borderRadius: 2, transition: 'all 0.2s' }} />
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {[1,2,3].map(i => <div key={i} style={{ height: 4, background: 'var(--border)', borderRadius: 2 }} />)}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: sidebar === opt.v ? 600 : 400, color: sidebar === opt.v ? 'var(--accent)' : 'var(--text-2)' }}>
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </SeccionApariencia>
+          </div>
+
+          {/* Live preview note */}
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '0 1rem' }}>
+            Los cambios se aplican en tiempo real y se guardan automáticamente en este dispositivo.
+          </p>
+        </div>
+      )}
 
       {/* ── TAB: Consultorio ───────────────────────────────────────── */}
       {tabActiva === 'Consultorio' && (
@@ -366,6 +546,18 @@ function Campo({ label, value, onChange, type = 'text', placeholder = '' }) {
     <div>
       <label className="field-label">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input" />
+    </div>
+  )
+}
+
+function SeccionApariencia({ icon, titulo, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ color: 'var(--text-3)' }}>{icon}</span>
+        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-2)' }}>{titulo}</p>
+      </div>
+      {children}
     </div>
   )
 }
