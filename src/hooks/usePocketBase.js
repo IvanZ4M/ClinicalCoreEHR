@@ -53,9 +53,10 @@ export function useRegistro(coleccion, id, expandir = '') {
   const [dato, setDato] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
-    if (!id) return
+    if (!id) { setCargando(false); return }
     let cancelado = false
 
     setCargando(true)
@@ -66,7 +67,9 @@ export function useRegistro(coleccion, id, expandir = '') {
       .finally(() => { if (!cancelado) setCargando(false) })
 
     return () => { cancelado = true }
-  }, [coleccion, id, expandir])
+  }, [coleccion, id, expandir, version])
 
-  return { dato, cargando, error }
+  const recargar = () => setVersion(v => v + 1)
+
+  return { dato, cargando, error, recargar }
 }
