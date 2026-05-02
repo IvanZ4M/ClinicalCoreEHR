@@ -1,17 +1,21 @@
-import React from 'react';
-import Sidebar from './Sidebar';
-import TopBar from './TopBar';
+import Sidebar from './Sidebar'
+import TopBar from './TopBar'
 
 export default function Layout({ children }) {
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
+    <div style={{
+      display: 'flex',
+      height: '100svh',
+      background: 'var(--bg)',
+      overflow: 'hidden',
+    }}>
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         <TopBar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+        <main style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {children}
         </main>
       </div>
     </div>
-  );
+  )
 }
