@@ -1,78 +1,108 @@
 @import "tailwindcss";
+@import "./styles/system.css";
 
-* {
+/* ─── Dark mode via .dark class on <html> ─────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Base reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+#root { height: 100%; width: 100%; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
   margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  color: inherit;
 }
+p { margin: 0; }
 
-html, body, #root {
-  height: 100%;
+/* ─── Legacy compatibility classes (Phase A) — kept for components not yet migrated ─── */
+.input-base {
   width: 100%;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-base::placeholder { color: var(--text-3); }
+.input-base:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f1f5f9;
-  color: #1e293b;
+.surface {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-body {
-  margin: 0;
+.login-gradient {
+  background: linear-gradient(145deg,
+    oklch(14% 0.03 214) 0%,
+    oklch(20% 0.06 220) 40%,
+    oklch(12% 0.025 214) 100%
+  );
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+.sidebar-bg { background: oklch(14% 0.028 218); }
+.sidebar-active {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
+.sidebar-active-bar { background: var(--accent); }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  border: 1.5px solid var(--border);
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover { background: var(--bg-inset); }
+
+.badge-blue   { background: var(--accent-dim);  color: var(--accent); }
+.badge-green  { background: var(--ok-dim);       color: var(--ok); }
+.badge-yellow { background: var(--warn-dim);     color: var(--warn); }
+.badge-red    { background: var(--danger-dim);   color: var(--danger); }
+.badge-gray   { background: var(--bg-subtle);    color: var(--text-2); }
+
+.table-row-hover:hover { background-color: var(--bg-subtle); transition: background-color 0.1s; }
+
+.pulse-dot { position: relative; }
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulseSoft 2s ease-in-out infinite;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
+
+/* Staggered nav items (legacy alias) */
+.nav-stagger > *:nth-child(1) { animation: slideInLeft 0.20s 0.04s var(--ease-out) both; }
+.nav-stagger > *:nth-child(2) { animation: slideInLeft 0.20s 0.08s var(--ease-out) both; }
+.nav-stagger > *:nth-child(3) { animation: slideInLeft 0.20s 0.12s var(--ease-out) both; }
+.nav-stagger > *:nth-child(4) { animation: slideInLeft 0.20s 0.16s var(--ease-out) both; }
+.nav-stagger > *:nth-child(5) { animation: slideInLeft 0.20s 0.20s var(--ease-out) both; }
+.nav-stagger > *:nth-child(6) { animation: slideInLeft 0.20s 0.24s var(--ease-out) both; }
