@@ -1,109 +1,92 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useColeccion } from '../hooks/usePocketBase'
-import pb from '../lib/pb'
+import { I } from '../components/icons'
 
-// Saludo según la hora del día
 function obtenerSaludo() {
-  const hora = new Date().getHours()
-  if (hora < 12) return 'Buenos días'
-  if (hora < 18) return 'Buenas tardes'
+  const h = new Date().getHours()
+  if (h < 12) return 'Buenos días'
+  if (h < 18) return 'Buenas tardes'
   return 'Buenas noches'
 }
 
-// Formatea la hora de una fecha ISO
 function formatearHora(fechaISO) {
   if (!fechaISO) return '—'
-  return new Date(fechaISO).toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return new Date(fechaISO).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Formatea fecha completa
 function formatearFecha(fechaISO) {
   if (!fechaISO) return '—'
   return new Date(fechaISO).toLocaleDateString('es-MX', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
 }
 
-// Colores por estado de la cita
-const coloresEstado = {
-  programada:   'bg-blue-100 text-blue-700',
-  confirmada:   'bg-green-100 text-green-700',
-  en_sala:      'bg-yellow-100 text-yellow-700',
-  en_consulta:  'bg-purple-100 text-purple-700',
-  completada:   'bg-gray-100 text-gray-600',
-  cancelada:    'bg-red-100 text-red-600',
+const ESTADO_CLASS = {
+  programada:  'badge badge-accent',
+  confirmada:  'badge badge-ok',
+  en_sala:     'badge badge-warn',
+  en_consulta: 'badge badge-violet',
+  completada:  'badge badge-neutral',
+  cancelada:   'badge badge-danger',
+}
+const ESTADO_LABEL = {
+  programada: 'Programada', confirmada: 'Confirmada', en_sala: 'En sala',
+  en_consulta: 'En consulta', completada: 'Completada', cancelada: 'Cancelada',
+}
+const TIPO_LABEL = {
+  consulta_general: 'Consulta General', seguimiento: 'Seguimiento',
+  urgencia: 'Urgencia', revision: 'Revisión', chequeo: 'Chequeo',
 }
 
-const etiquetasEstado = {
-  programada:   'Programada',
-  confirmada:   'Confirmada',
-  en_sala:      'En sala',
-  en_consulta:  'En consulta',
-  completada:   'Completada',
-  cancelada:    'Cancelada',
-}
-
-const etiquetasTipo = {
-  consulta_general: 'Consulta General',
-  seguimiento:      'Seguimiento',
-  urgencia:         'Urgencia',
-  revision:         'Revisión',
-  chequeo:          'Chequeo de Rutina',
+/* Stat card ---------------------------------------------------------------- */
+function StatCard({ label, value, sub, Icon, colorVar, dimVar }) {
+  return (
+    <div className="card" style={{ padding: '1.25rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{
+          width: 40, height: 40,
+          background: dimVar,
+          borderRadius: 'var(--radius-md)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon width={18} height={18} style={{ color: colorVar }} />
+        </div>
+      </div>
+      <p className="tabular" style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
+        {value}
+      </p>
+      <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>
+        {label}
+      </p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
+    </div>
+  )
 }
 
 export default function Dashboard() {
+  const navigate  = useNavigate()
   const { usuario } = useAuth()
 
-  // Fecha de hoy en formato que PocketBase entiende para filtrar
   const hoy = new Date()
   const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-    .toISOString()
-    .replace('T', ' ')
-    .slice(0, 19)
+    .toISOString().replace('T', ' ').slice(0, 19)
   const finDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59)
-    .toISOString()
-    .replace('T', ' ')
-    .slice(0, 19)
+    .toISOString().replace('T', ' ').slice(0, 19)
 
-  // Datos reales de PocketBase
-  const { datos: todosLosPacientes } = useColeccion('pacientes', {
-    filtro: 'activo = true',
-  })
-
-  const { datos: citasHoy } = useColeccion('citas', {
+  const { datos: todosLosPacientes } = useColeccion('pacientes', { filtro: 'activo = true' })
+  const { datos: citasHoy }          = useColeccion('citas', {
     filtro: `fecha_hora >= "${inicioDia}" && fecha_hora <= "${finDia}"`,
-    orden: 'fecha_hora',
-    expandir: 'paciente,medico',
+    orden: 'fecha_hora', expandir: 'paciente,medico',
   })
-
-  const { datos: informesPendientes } = useColeccion('consultas', {
-    filtro: 'estado = "borrador"',
-  })
-
-  const { datos: todasLasCitas } = useColeccion('citas', {
-    filtro: 'estado != "cancelada"',
-  })
-
-  // Calcular diagnósticos frecuentes desde consultas reales
-  const { datos: diagnosticos } = useColeccion('diagnosticos', {
-    porPagina: 500,
-  })
+  const { datos: informesPendientes } = useColeccion('consultas', { filtro: 'estado = "borrador"' })
+  const { datos: todasLasCitas }      = useColeccion('citas', { filtro: 'estado != "cancelada"' })
+  const { datos: diagnosticos }       = useColeccion('diagnosticos', { porPagina: 500 })
 
   const diagnosticosFrecuentes = (() => {
     const conteo = {}
-    diagnosticos.forEach((d) => {
-      const clave = d.descripcion
-      conteo[clave] = (conteo[clave] || 0) + 1
-    })
-    return Object.entries(conteo)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
+    diagnosticos.forEach(d => { conteo[d.descripcion] = (conteo[d.descripcion] || 0) + 1 })
+    return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 5)
       .map(([nombre, cantidad]) => ({
         nombre,
         porcentaje: Math.round((cantidad / Math.max(diagnosticos.length, 1)) * 100),
@@ -111,122 +94,135 @@ export default function Dashboard() {
   })()
 
   const citasPendientes = todasLasCitas.filter(
-    (c) => c.estado === 'programada' || c.estado === 'confirmada'
+    c => c.estado === 'programada' || c.estado === 'confirmada'
   ).length
 
-  const nombreMedico = usuario
-    ? `${usuario.nombre} ${usuario.apellidos}`
-    : 'Doctor'
-
   return (
-    <div className="p-6 space-y-6">
+    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }} className="anim-fade">
 
-      {/* Encabezado */}
-      <div className="flex items-start justify-between">
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {obtenerSaludo()}, Dr. {usuario?.nombre}
+          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            {obtenerSaludo()}, Dr.&nbsp;{usuario?.nombre}
           </h1>
-          <p className="text-gray-500 mt-1 capitalize">
-            Aquí está su resumen clínico para hoy, {formatearFecha(new Date().toISOString())}
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem', textTransform: 'capitalize' }}>
+            {formatearFecha(new Date().toISOString())}
           </p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            📅 Nueva Cita
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => navigate('/citas')} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
+            <I.Calendar width={14} height={14} />
+            Nueva Cita
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors">
-            👤 Registrar Paciente
+          <button onClick={() => navigate('/pacientes')} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+            <I.Plus width={14} height={14} />
+            Nuevo Paciente
           </button>
         </div>
       </div>
 
-      {/* Tarjetas de estadísticas */}
-      <div className="grid grid-cols-3 gap-4">
-        <TarjetaStat
-          icono="👥"
-          etiqueta="TOTAL DE PACIENTES"
-          valor={todosLosPacientes.length}
-          badge="+4% esta semana"
-          badgeColor="text-green-600"
+      {/* ── Stats ────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
+        <StatCard
+          label="Total Pacientes"
+          value={todosLosPacientes.length}
+          sub="activos en el sistema"
+          Icon={I.Patients}
+          colorVar="var(--accent)"
+          dimVar="var(--accent-dim)"
         />
-        <TarjetaStat
-          icono="📅"
-          etiqueta="CITAS HOY"
-          valor={citasHoy.length}
-          badge={`${citasPendientes} restantes`}
-          badgeColor="text-blue-600"
+        <StatCard
+          label="Citas Hoy"
+          value={citasHoy.length}
+          sub={`${citasPendientes} pendientes`}
+          Icon={I.Calendar}
+          colorVar="var(--ok)"
+          dimVar="var(--ok-dim)"
         />
-        <TarjetaStat
-          icono="📋"
-          etiqueta="INFORMES PENDIENTES"
-          valor={informesPendientes.length}
-          badge={informesPendientes.length > 0 ? `${informesPendientes.length} Urgentes` : 'Al día'}
-          badgeColor={informesPendientes.length > 0 ? 'text-red-600' : 'text-green-600'}
+        <StatCard
+          label="Borradores"
+          value={informesPendientes.length}
+          sub={informesPendientes.length > 0 ? 'consultas sin completar' : 'al día'}
+          Icon={I.Clipboard}
+          colorVar={informesPendientes.length > 0 ? 'var(--warn)' : 'var(--text-3)'}
+          dimVar={informesPendientes.length > 0 ? 'var(--warn-dim)' : 'var(--bg-subtle)'}
         />
       </div>
 
-      {/* Citas de hoy + panel derecho */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* ── Main grid ────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1rem' }}>
 
-        {/* Tabla de citas */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Citas de Hoy</h2>
-            <button className="text-sm text-blue-600 hover:underline">Ver Agenda →</button>
+        {/* Citas de hoy */}
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '1rem 1.25rem',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Citas de Hoy</h2>
+            <button
+              onClick={() => navigate('/citas')}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Ver agenda <I.ChevronRight width={13} height={13} />
+            </button>
           </div>
 
           {citasHoy.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
-              <p className="text-4xl mb-3">📅</p>
-              <p className="font-medium">Sin citas programadas para hoy</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 1rem', color: 'var(--text-3)' }}>
+              <I.Calendar width={32} height={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
+              <p style={{ fontSize: '0.875rem', fontWeight: 500 }}>Sin citas para hoy</p>
+              <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.7 }}>No hay citas programadas</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
-                  <th className="text-left pb-3 font-medium">Nombre del Paciente</th>
-                  <th className="text-left pb-3 font-medium">Hora</th>
-                  <th className="text-left pb-3 font-medium">Tipo</th>
-                  <th className="text-left pb-3 font-medium">Estado</th>
-                  <th className="text-left pb-3 font-medium">Acción</th>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['Paciente', 'Hora', 'Tipo', 'Estado', ''].map(h => (
+                    <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {citasHoy.map((cita) => {
-                  const paciente = cita.expand?.paciente
-                  const nombrePaciente = paciente
-                    ? `${paciente.nombre} ${paciente.apellidos}`
-                    : 'Paciente no encontrado'
+              <tbody>
+                {citasHoy.map(cita => {
+                  const pac = cita.expand?.paciente
+                  const initials = pac ? `${pac.nombre?.[0] || ''}${pac.apellidos?.[0] || ''}` : '?'
                   return (
-                    <tr key={cita.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
-                            {paciente
-                              ? `${paciente.nombre?.[0]}${paciente.apellidos?.[0]}`
-                              : '?'}
+                    <tr key={cita.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                          <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.625rem' }}>
+                            {initials}
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{nombrePaciente}</p>
-                            <p className="text-gray-400 text-xs">ID: #{cita.id.slice(-6).toUpperCase()}</p>
-                          </div>
+                          <span style={{ fontWeight: 500, color: 'var(--text)' }}>
+                            {pac ? `${pac.nombre} ${pac.apellidos}` : 'Desconocido'}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3 text-gray-700">{formatearHora(cita.fecha_hora)}</td>
-                      <td className="py-3 text-gray-700">
-                        {etiquetasTipo[cita.tipo] || cita.tipo}
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatearHora(cita.fecha_hora)}
                       </td>
-                      <td className="py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${coloresEstado[cita.estado] || 'bg-gray-100 text-gray-600'}`}>
-                          {etiquetasEstado[cita.estado] || cita.estado}
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-2)' }}>
+                        {TIPO_LABEL[cita.tipo] || cita.tipo}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span className={ESTADO_CLASS[cita.estado] || 'badge badge-neutral'}>
+                          {ESTADO_LABEL[cita.estado] || cita.estado}
                         </span>
                       </td>
-                      <td className="py-3">
-                        <button className="text-sm font-medium text-blue-600 hover:underline">
-                          {cita.estado === 'en_sala' || cita.estado === 'confirmada'
-                            ? 'Iniciar Visita'
-                            : 'Ver Historial'}
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <button
+                          onClick={() =>
+                            cita.estado === 'en_sala' || cita.estado === 'confirmada'
+                              ? navigate(`/consulta/nueva?paciente=${cita.paciente}`)
+                              : navigate(`/pacientes/${cita.paciente}`)
+                          }
+                          style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        >
+                          {cita.estado === 'en_sala' || cita.estado === 'confirmada' ? 'Iniciar visita' : 'Ver historial'}
                         </button>
                       </td>
                     </tr>
@@ -237,29 +233,36 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Panel derecho */}
-        <div className="flex flex-col gap-4">
+        {/* Right column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           {/* Diagnósticos frecuentes */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-            <h2 className="text-base font-semibold text-gray-900 mb-4">Diagnósticos Frecuentes</h2>
+          <div className="card" style={{ flex: 1, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <I.Activity width={15} height={15} style={{ color: 'var(--text-3)' }} />
+              <h2 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Diagnósticos Frecuentes</h2>
+            </div>
             {diagnosticosFrecuentes.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">
-                Sin datos aún. Se mostrarán conforme se registren consultas.
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1.5rem 0' }}>
+                Se mostrarán al registrar consultas
               </p>
             ) : (
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {diagnosticosFrecuentes.map((dx, i) => (
                   <div key={i}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-700 font-medium">{dx.nombre}</span>
-                      <span className="text-gray-500">{dx.porcentaje}%</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                      <span style={{ color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '0.5rem' }}>
+                        {dx.nombre}
+                      </span>
+                      <span className="tabular" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{dx.porcentaje}%</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div
-                        className="bg-blue-600 h-1.5 rounded-full"
-                        style={{ width: `${dx.porcentaje}%` }}
-                      />
+                    <div style={{ width: '100%', background: 'var(--bg-inset)', borderRadius: 'var(--radius-full)', height: 4 }}>
+                      <div style={{
+                        width: `${dx.porcentaje}%`, height: 4,
+                        background: 'var(--accent)',
+                        borderRadius: 'var(--radius-full)',
+                        transition: 'width 0.5s var(--ease-out)',
+                      }} />
                     </div>
                   </div>
                 ))}
@@ -267,46 +270,27 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Alertas críticas */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-base font-semibold text-red-600 mb-3">⚠ Alertas Críticas</h2>
+          {/* Borradores */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <h2 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.75rem' }}>Borradores</h2>
             {informesPendientes.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin alertas activas.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--ok)' }}>
+                <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--ok)' }} />
+                Todo al día
+              </div>
             ) : (
-              <div className="space-y-2">
-                {informesPendientes.slice(0, 3).map((inf) => (
-                  <div key={inf.id} className="flex gap-2 text-sm">
-                    <span className="text-red-500 mt-0.5">●</span>
-                    <div>
-                      <p className="font-medium text-gray-800">Consulta sin completar</p>
-                      <p className="text-gray-400 text-xs">
-                        Motivo: {inf.motivo || 'Sin descripción'}
-                      </p>
-                    </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {informesPendientes.slice(0, 3).map(inf => (
+                  <div key={inf.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-2)' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--warn)', marginTop: 4, flexShrink: 0 }} />
+                    <p style={{ lineHeight: 1.4 }}>{inf.motivo || 'Consulta sin completar'}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
-
         </div>
       </div>
-    </div>
-  )
-}
-
-// Componente reutilizable de tarjeta de estadística
-function TarjetaStat({ icono, etiqueta, valor, badge, badgeColor }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-2xl">{icono}</span>
-        <span className={`text-xs font-medium ${badgeColor}`}>{badge}</span>
-      </div>
-      <p className="text-xs text-gray-400 uppercase font-medium tracking-wide mb-1">
-        {etiqueta}
-      </p>
-      <p className="text-4xl font-bold text-gray-900">{valor}</p>
     </div>
   )
 }

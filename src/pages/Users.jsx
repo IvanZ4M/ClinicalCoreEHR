@@ -2,344 +2,206 @@ import { useState } from 'react'
 import { useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
 import pb from '../lib/pb'
+import { I } from '../components/icons'
 
 const ROLES = [
-  { valor: 'medico',          etiqueta: 'Médico',          color: 'bg-blue-100 text-blue-700'   },
-  { valor: 'enfermera',       etiqueta: 'Enfermera',       color: 'bg-green-100 text-green-700' },
-  { valor: 'recepcionista',   etiqueta: 'Recepcionista',   color: 'bg-yellow-100 text-yellow-700'},
-  { valor: 'administrador',   etiqueta: 'Administrador',   color: 'bg-purple-100 text-purple-700'},
+  { valor: 'medico',        etiqueta: 'Médico',        badgeClass: 'badge-accent'  },
+  { valor: 'enfermera',     etiqueta: 'Enfermera',     badgeClass: 'badge-ok'      },
+  { valor: 'recepcionista', etiqueta: 'Recepcionista', badgeClass: 'badge-warn'    },
+  { valor: 'administrador', etiqueta: 'Administrador', badgeClass: 'badge-violet'  },
 ]
 
 function formatearFecha(fechaISO) {
   if (!fechaISO) return '—'
   return new Date(fechaISO).toLocaleString('es-MX', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }
 
-function obtenerColorRol(rol) {
-  return ROLES.find(r => r.valor === rol)?.color || 'bg-gray-100 text-gray-600'
-}
-
-function obtenerEtiquetaRol(rol) {
-  return ROLES.find(r => r.valor === rol)?.etiqueta || rol
-}
+function rolBadge(rol) { return ROLES.find(r => r.valor === rol)?.badgeClass || 'badge-neutral' }
+function rolLabel(rol) { return ROLES.find(r => r.valor === rol)?.etiqueta || rol }
 
 export default function Users() {
   const { usuario: usuarioActual } = useAuth()
-  const [filtroRol, setFiltroRol] = useState('')
+  const [filtroRol,    setFiltroRol]    = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
-  const [modalEditar, setModalEditar] = useState(null)
-  const [guardando, setGuardando] = useState(false)
-  const [errorForm, setErrorForm] = useState('')
-  const [confirmEliminar, setConfirmEliminar] = useState(null)
+  const [modalEditar,  setModalEditar]  = useState(null)
+  const [guardando,    setGuardando]    = useState(false)
+  const [errorForm,    setErrorForm]    = useState('')
+  const [confirmBlock, setConfirmBlock] = useState(null)
 
   const [form, setForm] = useState({
     nombre: '', apellidos: '', email: '',
     password: '', passwordConfirm: '',
-    rol: 'medico', cedula_profesional: '',
-    especialidad: '', activo: true,
+    rol: 'medico', cedula_profesional: '', especialidad: '', activo: true,
   })
 
-  // Construir filtro dinámico
   const partesFiltro = ['id != ""']
   if (filtroRol) partesFiltro.push(`rol = "${filtroRol}"`)
   if (filtroEstado === 'activo') partesFiltro.push('activo = true')
   if (filtroEstado === 'inactivo') partesFiltro.push('activo = false')
-  const filtro = partesFiltro.join(' && ')
 
-  const { datos: usuarios, cargando, recargar } = useColeccion('usuarios', {
-    filtro,
-    orden: '-created',
-  })
+  const { datos: usuarios, cargando, recargar } = useColeccion('usuarios', { filtro: partesFiltro.join(' && '), orden: '-created' })
 
-  // Contadores
-  const totalUsuarios  = usuarios.length
-  const medicos        = usuarios.filter(u => u.rol === 'medico').length
-  const enfermeras     = usuarios.filter(u => u.rol === 'enfermera').length
-  const bloqueados     = usuarios.filter(u => !u.activo).length
+  const totalUsuarios = usuarios.length
+  const medicos       = usuarios.filter(u => u.rol === 'medico').length
+  const enfermeras    = usuarios.filter(u => u.rol === 'enfermera').length
+  const bloqueados    = usuarios.filter(u => !u.activo).length
 
   const resetForm = () => {
-    setForm({
-      nombre: '', apellidos: '', email: '',
-      password: '', passwordConfirm: '',
-      rol: 'medico', cedula_profesional: '',
-      especialidad: '', activo: true,
-    })
+    setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', activo: true })
     setErrorForm('')
   }
-
-  // ── Crear usuario ────────────────────────────────────────────────────────────
 
   const handleCrear = async () => {
-    if (!form.nombre || !form.apellidos || !form.email || !form.password) {
-      setErrorForm('Nombre, apellidos, correo y contraseña son obligatorios.')
-      return
-    }
-    if (form.password !== form.passwordConfirm) {
-      setErrorForm('Las contraseñas no coinciden.')
-      return
-    }
-    if (form.password.length < 8) {
-      setErrorForm('La contraseña debe tener al menos 8 caracteres.')
-      return
-    }
-    setGuardando(true)
-    setErrorForm('')
+    if (!form.nombre || !form.apellidos || !form.email || !form.password) { setErrorForm('Nombre, apellidos, correo y contraseña son obligatorios.'); return }
+    if (form.password !== form.passwordConfirm) { setErrorForm('Las contraseñas no coinciden.'); return }
+    if (form.password.length < 8) { setErrorForm('La contraseña debe tener al menos 8 caracteres.'); return }
+    setGuardando(true); setErrorForm('')
     try {
-      await pb.collection('usuarios').create({
-        nombre:             form.nombre,
-        apellidos:          form.apellidos,
-        email:              form.email,
-        password:           form.password,
-        passwordConfirm:    form.passwordConfirm,
-        rol:                form.rol,
-        cedula_profesional: form.cedula_profesional,
-        especialidad:       form.especialidad,
-        activo:             form.activo,
-      })
-      setModalAbierto(false)
-      resetForm()
-      recargar()
-    } catch (err) {
-      setErrorForm('Error al crear: ' + (err.data?.message || err.message))
-    } finally {
-      setGuardando(false)
-    }
+      await pb.collection('usuarios').create({ ...form })
+      setModalAbierto(false); resetForm(); recargar()
+    } catch (err) { setErrorForm('Error al crear: ' + (err.data?.message || err.message)) }
+    finally { setGuardando(false) }
   }
 
-  // ── Editar usuario ───────────────────────────────────────────────────────────
-
   const abrirEditar = (usuario) => {
-    setForm({
-      nombre:             usuario.nombre || '',
-      apellidos:          usuario.apellidos || '',
-      email:              usuario.email || '',
-      password:           '',
-      passwordConfirm:    '',
-      rol:                usuario.rol || 'medico',
-      cedula_profesional: usuario.cedula_profesional || '',
-      especialidad:       usuario.especialidad || '',
-      activo:             usuario.activo ?? true,
-    })
-    setModalEditar(usuario)
-    setErrorForm('')
+    setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', activo: usuario.activo ?? true })
+    setModalEditar(usuario); setErrorForm('')
   }
 
   const handleEditar = async () => {
-    if (!form.nombre || !form.apellidos || !form.email) {
-      setErrorForm('Nombre, apellidos y correo son obligatorios.')
-      return
-    }
-    if (form.password && form.password !== form.passwordConfirm) {
-      setErrorForm('Las contraseñas no coinciden.')
-      return
-    }
-    if (form.password && form.password.length < 8) {
-      setErrorForm('La contraseña debe tener al menos 8 caracteres.')
-      return
-    }
-    setGuardando(true)
-    setErrorForm('')
+    if (!form.nombre || !form.apellidos || !form.email) { setErrorForm('Nombre, apellidos y correo son obligatorios.'); return }
+    if (form.password && form.password !== form.passwordConfirm) { setErrorForm('Las contraseñas no coinciden.'); return }
+    if (form.password && form.password.length < 8) { setErrorForm('La contraseña debe tener al menos 8 caracteres.'); return }
+    setGuardando(true); setErrorForm('')
     try {
-      const datos = {
-        nombre:             form.nombre,
-        apellidos:          form.apellidos,
-        email:              form.email,
-        rol:                form.rol,
-        cedula_profesional: form.cedula_profesional,
-        especialidad:       form.especialidad,
-        activo:             form.activo,
-      }
-      // Solo actualizar contraseña si se proporcionó una nueva
-      if (form.password) {
-        datos.password       = form.password
-        datos.passwordConfirm = form.passwordConfirm
-      }
+      const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, activo: form.activo }
+      if (form.password) { datos.password = form.password; datos.passwordConfirm = form.passwordConfirm }
       await pb.collection('usuarios').update(modalEditar.id, datos)
-      setModalEditar(null)
-      resetForm()
-      recargar()
-    } catch (err) {
-      setErrorForm('Error al actualizar: ' + (err.data?.message || err.message))
-    } finally {
-      setGuardando(false)
-    }
+      setModalEditar(null); resetForm(); recargar()
+    } catch (err) { setErrorForm('Error al actualizar: ' + (err.data?.message || err.message)) }
+    finally { setGuardando(false) }
   }
-
-  // ── Cambiar estado activo/inactivo ───────────────────────────────────────────
 
   const toggleActivo = async (usuario) => {
     if (usuario.id === usuarioActual?.id) return
-    try {
-      await pb.collection('usuarios').update(usuario.id, { activo: !usuario.activo })
-      recargar()
-    } catch (err) {
-      console.error('Error al cambiar estado:', err)
-    }
+    try { await pb.collection('usuarios').update(usuario.id, { activo: !usuario.activo }); recargar() }
+    catch (err) { console.error('Error al cambiar estado:', err) }
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="anim-fade">
 
-      {/* Encabezado */}
-      <div className="flex items-center justify-between">
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Administre el acceso del personal y configure permisos de seguridad
-          </p>
+          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>Gestión de Usuarios</h1>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>Administre el acceso del personal y configure permisos de seguridad</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setModalAbierto(true) }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
-        >
-          + Nuevo Usuario
+        <button onClick={() => { resetForm(); setModalAbierto(true) }} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+          <I.Plus width={14} height={14} /> Nuevo Usuario
         </button>
       </div>
 
-      {/* Tarjetas resumen */}
-      <div className="grid grid-cols-4 gap-4">
-        <TarjetaContador
-          label="Total Usuarios"
-          valor={totalUsuarios}
-          badge="+4 este mes"
-          badgeColor="text-green-600"
-        />
-        <TarjetaContador label="Médicos Activos"  valor={medicos}    />
-        <TarjetaContador label="Enfermería"        valor={enfermeras} />
-        <TarjetaContador
-          label="Accesos Bloqueados"
-          valor={bloqueados}
-          rojo={bloqueados > 0}
-        />
+      {/* ── Stats ──────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem' }}>
+        {[
+          { label: 'Total Usuarios',      value: totalUsuarios, sub: 'en el sistema',          colorVar: 'var(--text)' },
+          { label: 'Médicos Activos',      value: medicos,       sub: 'con acceso activo',       colorVar: 'var(--accent)' },
+          { label: 'Enfermería',           value: enfermeras,    sub: 'personal de enfermería',  colorVar: 'var(--ok)' },
+          { label: 'Accesos Bloqueados',   value: bloqueados,    sub: bloqueados > 0 ? 'requieren atención' : 'todo en orden', colorVar: bloqueados > 0 ? 'var(--danger)' : 'var(--text-3)' },
+        ].map(({ label, value, sub, colorVar }) => (
+          <div key={label} className="card" style={{ padding: '1.25rem' }}>
+            <p className="tabular" style={{ fontSize: '1.875rem', fontWeight: 700, color: colorVar, lineHeight: 1 }}>{value}</p>
+            <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>{label}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Filtros */}
-      <div className="flex items-center gap-3">
-        <select
-          value={filtroRol}
-          onChange={(e) => setFiltroRol(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+      {/* ── Filters ────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <select value={filtroRol} onChange={e => setFiltroRol(e.target.value)} className="input" style={{ width: 'auto', minWidth: 160 }}>
           <option value="">Todos los roles</option>
-          {ROLES.map(r => (
-            <option key={r.valor} value={r.valor}>{r.etiqueta}</option>
-          ))}
+          {ROLES.map(r => <option key={r.valor} value={r.valor}>{r.etiqueta}</option>)}
         </select>
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="input" style={{ width: 'auto', minWidth: 140 }}>
           <option value="">Cualquier estado</option>
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
         </select>
-        <span className="text-sm text-gray-400 ml-auto">
-          Mostrando {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''}
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginLeft: 'auto' }}>
+          {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      {/* Tabla de usuarios */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* ── Table ──────────────────────────────────────────────────── */}
+      <div className="card" style={{ overflow: 'hidden' }}>
         {cargando ? (
-          <div className="text-center py-16 text-gray-400">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm">Cargando usuarios...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
+            <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', marginBottom: '0.75rem' }} className="anim-spin" />
+            <p style={{ fontSize: '0.875rem' }}>Cargando usuarios...</p>
           </div>
         ) : usuarios.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-4xl mb-3">👤</p>
-            <p className="font-medium text-gray-600">Sin usuarios encontrados</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
+            <I.User width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
+            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>Sin usuarios encontrados</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr className="text-xs text-gray-400 uppercase">
-                <th className="text-left px-5 py-3 font-medium">Usuario</th>
-                <th className="text-left px-5 py-3 font-medium">Rol</th>
-                <th className="text-left px-5 py-3 font-medium">Especialidad</th>
-                <th className="text-left px-5 py-3 font-medium">Último acceso</th>
-                <th className="text-left px-5 py-3 font-medium">Estado</th>
-                <th className="text-left px-5 py-3 font-medium">Acciones</th>
+          <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                {['Usuario', 'Rol', 'Especialidad', 'Última act.', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {usuarios.map((u) => {
-                const esMiCuenta = u.id === usuarioActual?.id
+            <tbody>
+              {usuarios.map(u => {
+                const esYo = u.id === usuarioActual?.id
                 return (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-
-                    {/* Usuario */}
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  <tr key={u.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.75rem' }}>
                           {u.nombre?.[0]}{u.apellidos?.[0]}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
-                            {u.nombre} {u.apellidos}
-                            {esMiCuenta && (
-                              <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">
-                                Tú
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-gray-400 text-xs">{u.email}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{u.nombre} {u.apellidos}</span>
+                            {esYo && <span className="badge badge-accent" style={{ fontSize: '0.625rem' }}>Tú</span>}
+                          </div>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{u.email}</p>
                         </div>
                       </div>
                     </td>
-
-                    {/* Rol */}
-                    <td className="px-5 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${obtenerColorRol(u.rol)}`}>
-                        {obtenerEtiquetaRol(u.rol)}
-                      </span>
+                    <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <span className={`badge ${rolBadge(u.rol)}`}>{rolLabel(u.rol)}</span>
                     </td>
-
-                    {/* Especialidad */}
-                    <td className="px-5 py-4 text-gray-600">
-                      {u.especialidad || '—'}
-                    </td>
-
-                    {/* Último acceso */}
-                    <td className="px-5 py-4 text-gray-500 text-xs">
+                    <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)' }}>{u.especialidad || '—'}</td>
+                    <td className="tabular" style={{ padding: '0.875rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
                       {formatearFecha(u.updated)}
                     </td>
-
-                    {/* Estado */}
-                    <td className="px-5 py-4">
+                    <td style={{ padding: '0.875rem 1.25rem' }}>
                       <button
-                        onClick={() => !esMiCuenta && toggleActivo(u)}
-                        disabled={esMiCuenta}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                          u.activo
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-red-100 text-red-600 hover:bg-red-200'
-                        } ${esMiCuenta ? 'cursor-default' : 'cursor-pointer'}`}
+                        onClick={() => !esYo && toggleActivo(u)}
+                        disabled={esYo}
+                        className={`badge ${u.activo ? 'badge-ok' : 'badge-danger'}`}
+                        style={{ cursor: esYo ? 'default' : 'pointer', border: 'none' }}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${u.activo ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'currentColor' }} />
                         {u.activo ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
-
-                    {/* Acciones */}
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => abrirEditar(u)}
-                          className="text-xs text-blue-600 hover:underline font-medium"
-                        >
-                          Editar
+                    <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <button onClick={() => abrirEditar(u)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                          <I.Edit width={11} height={11} /> Editar
                         </button>
-                        {!esMiCuenta && (
-                          <button
-                            onClick={() => setConfirmEliminar(u)}
-                            className="text-xs text-red-400 hover:text-red-600 hover:underline"
-                          >
+                        {!esYo && (
+                          <button onClick={() => setConfirmBlock(u)} style={{ fontSize: '0.75rem', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
                             Bloquear
                           </button>
                         )}
@@ -353,26 +215,27 @@ export default function Users() {
         )}
       </div>
 
-      {/* Paneles inferiores */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🛡</span>
+      {/* ── Info panels ────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <I.Shield width={14} height={14} style={{ color: 'var(--accent)' }} />
+            </div>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Políticas de Acceso</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Cada rol tiene permisos específicos definidos en el sistema.
-                No asigne roles de Administrador a menos que sea estrictamente necesario.
+              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Políticas de Acceso</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                Cada rol tiene permisos específicos. No asigne roles de Administrador a menos que sea estrictamente necesario.
               </p>
-              <div className="mt-3 space-y-1">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {ROLES.map(r => (
-                  <div key={r.valor} className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className={`px-2 py-0.5 rounded-full ${r.color}`}>{r.etiqueta}</span>
-                    <span>
-                      {r.valor === 'administrador'  ? '— Acceso total al sistema'           : ''}
-                      {r.valor === 'medico'         ? '— Consultas, expedientes, recetas'   : ''}
-                      {r.valor === 'enfermera'      ? '— Signos vitales, notas, citas'      : ''}
-                      {r.valor === 'recepcionista'  ? '— Citas, registro de pacientes'      : ''}
+                  <div key={r.valor} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
+                    <span className={`badge ${r.badgeClass}`} style={{ fontSize: '0.625rem' }}>{r.etiqueta}</span>
+                    <span style={{ color: 'var(--text-3)' }}>
+                      {r.valor === 'administrador' ? '— Acceso total al sistema' : ''}
+                      {r.valor === 'medico' ? '— Consultas, expedientes, recetas' : ''}
+                      {r.valor === 'enfermera' ? '— Signos vitales, notas, citas' : ''}
+                      {r.valor === 'recepcionista' ? '— Citas, registro de pacientes' : ''}
                     </span>
                   </div>
                 ))}
@@ -381,21 +244,22 @@ export default function Users() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">📋</span>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Registro de Auditoría</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Todos los cambios de roles, creaciones y modificaciones de usuarios
-                quedan registrados con marca de tiempo y autor para cumplimiento normativo.
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div style={{ width: 32, height: 32, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <I.Clipboard width={14} height={14} style={{ color: 'var(--text-3)' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Registro de Auditoría</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                Todos los cambios de roles, creaciones y modificaciones quedan registrados con marca de tiempo.
               </p>
-              <div className="mt-3 space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {usuarios.slice(0, 3).map(u => (
-                  <div key={u.id} className="flex items-center gap-2 text-xs text-gray-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                    <span>
-                      {u.nombre} {u.apellidos} — {obtenerEtiquetaRol(u.rol)} — {formatearFecha(u.created)}
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--border)', flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {u.nombre} {u.apellidos} — {rolLabel(u.rol)} — {formatearFecha(u.created)}
                     </span>
                   </div>
                 ))}
@@ -405,58 +269,36 @@ export default function Users() {
         </div>
       </div>
 
-      {/* ── Modal: Nuevo Usuario ── */}
-      {modalAbierto && (
+      {/* ── Modal: Nuevo / Editar ────────────────────────────────────── */}
+      {(modalAbierto || modalEditar) && (
         <ModalUsuario
-          titulo="Nuevo Usuario"
-          form={form}
-          setForm={setForm}
-          errorForm={errorForm}
-          guardando={guardando}
-          onGuardar={handleCrear}
-          onCerrar={() => { setModalAbierto(false); resetForm() }}
-          esNuevo
+          titulo={modalEditar ? `Editar — ${modalEditar.nombre} ${modalEditar.apellidos}` : 'Nuevo Usuario'}
+          form={form} setForm={setForm}
+          errorForm={errorForm} guardando={guardando}
+          onGuardar={modalEditar ? handleEditar : handleCrear}
+          onCerrar={() => { setModalAbierto(false); setModalEditar(null); resetForm() }}
+          esNuevo={!modalEditar}
         />
       )}
 
-      {/* ── Modal: Editar Usuario ── */}
-      {modalEditar && (
-        <ModalUsuario
-          titulo={`Editar — ${modalEditar.nombre} ${modalEditar.apellidos}`}
-          form={form}
-          setForm={setForm}
-          errorForm={errorForm}
-          guardando={guardando}
-          onGuardar={handleEditar}
-          onCerrar={() => { setModalEditar(null); resetForm() }}
-          esNuevo={false}
-        />
-      )}
-
-      {/* ── Confirmación bloquear ── */}
-      {confirmEliminar && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Bloquear usuario?</h3>
-            <p className="text-sm text-gray-500 mb-5">
-              El usuario <strong>{confirmEliminar.nombre} {confirmEliminar.apellidos}</strong> no
-              podrá iniciar sesión hasta que se reactive su cuenta.
+      {/* ── Confirm block ────────────────────────────────────────────── */}
+      {confirmBlock && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          <div className="card anim-scale-in" style={{ width: '100%', maxWidth: 380, padding: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div style={{ width: 36, height: 36, background: 'var(--danger-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <I.Alert width={16} height={16} style={{ color: 'var(--danger)' }} />
+              </div>
+              <h3 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>¿Bloquear usuario?</h3>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+              El usuario <strong style={{ color: 'var(--text)' }}>{confirmBlock.nombre} {confirmBlock.apellidos}</strong> no podrá iniciar sesión hasta que se reactive su cuenta.
             </p>
-            <div className="flex gap-3 justify-end">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button onClick={() => setConfirmBlock(null)} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
               <button
-                onClick={() => setConfirmEliminar(null)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  await pb.collection('usuarios').update(confirmEliminar.id, { activo: false })
-                  setConfirmEliminar(null)
-                  recargar()
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
-              >
+                onClick={async () => { await pb.collection('usuarios').update(confirmBlock.id, { activo: false }); setConfirmBlock(null); recargar() }}
+                className="btn btn-danger" style={{ fontSize: '0.875rem' }}>
                 Bloquear acceso
               </button>
             </div>
@@ -467,93 +309,55 @@ export default function Users() {
   )
 }
 
-// ── Modal reutilizable para crear/editar usuario ──────────────────────────────
-
 function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, onCerrar, esNuevo }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+      <div className="card anim-scale-in" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
 
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">{titulo}</h2>
-          <button onClick={onCerrar} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <I.User width={14} height={14} style={{ color: 'var(--accent)' }} />
+            </div>
+            <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>{titulo}</h2>
+          </div>
+          <button onClick={onCerrar} className="btn btn-ghost btn-icon"><I.X width={16} height={16} /></button>
         </div>
 
-        <div className="p-6 space-y-4">
-
-          <div className="grid grid-cols-2 gap-4">
-            <Campo label="Nombre(s) *" value={form.nombre}
-              onChange={(v) => setForm({ ...form, nombre: v })} />
-            <Campo label="Apellidos *" value={form.apellidos}
-              onChange={(v) => setForm({ ...form, apellidos: v })} />
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <UCampo label="Nombre(s) *" value={form.nombre} onChange={v => setForm({ ...form, nombre: v })} />
+            <UCampo label="Apellidos *"  value={form.apellidos} onChange={v => setForm({ ...form, apellidos: v })} />
           </div>
-
-          <Campo label="Correo electrónico *" type="email" value={form.email}
-            onChange={(v) => setForm({ ...form, email: v })} />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Campo
-              label={esNuevo ? 'Contraseña *' : 'Nueva contraseña (opcional)'}
-              type="password"
-              value={form.password}
-              onChange={(v) => setForm({ ...form, password: v })}
-              placeholder="Mínimo 8 caracteres"
-            />
-            <Campo
-              label="Confirmar contraseña"
-              type="password"
-              value={form.passwordConfirm}
-              onChange={(v) => setForm({ ...form, passwordConfirm: v })}
-              placeholder="Repetir contraseña"
-            />
+          <UCampo label="Correo electrónico *" type="email" value={form.email} onChange={v => setForm({ ...form, email: v })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <UCampo label={esNuevo ? 'Contraseña *' : 'Nueva contraseña (opcional)'} type="password" value={form.password} onChange={v => setForm({ ...form, password: v })} placeholder="Mínimo 8 caracteres" />
+            <UCampo label="Confirmar contraseña" type="password" value={form.passwordConfirm} onChange={v => setForm({ ...form, passwordConfirm: v })} placeholder="Repetir contraseña" />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
-              <select
-                value={form.rol}
-                onChange={(e) => setForm({ ...form, rol: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                {ROLES.map(r => (
-                  <option key={r.valor} value={r.valor}>{r.etiqueta}</option>
-                ))}
+              <label className="field-label">Rol *</label>
+              <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })} className="input">
+                {ROLES.map(r => <option key={r.valor} value={r.valor}>{r.etiqueta}</option>)}
               </select>
             </div>
-            <Campo label="Especialidad" value={form.especialidad}
-              onChange={(v) => setForm({ ...form, especialidad: v })}
-              placeholder="Ej: Pediatría, Cardiología..." />
+            <UCampo label="Especialidad" value={form.especialidad} onChange={v => setForm({ ...form, especialidad: v })} placeholder="Ej: Pediatría, Cardiología..." />
           </div>
-
-          <Campo label="Cédula profesional" value={form.cedula_profesional}
-            onChange={(v) => setForm({ ...form, cedula_profesional: v })}
-            placeholder="Número de cédula" />
-
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.activo}
-              onChange={(e) => setForm({ ...form, activo: e.target.checked })}
-              className="w-4 h-4 accent-blue-600"
-            />
+          <UCampo label="Cédula profesional" value={form.cedula_profesional} onChange={v => setForm({ ...form, cedula_profesional: v })} placeholder="Número de cédula" />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
+            <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
             Usuario activo (puede iniciar sesión)
           </label>
-
           {errorForm && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg border border-red-100">
-              {errorForm}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+              <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {errorForm}
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-100">
-          <button onClick={onCerrar}
-            className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-            Cancelar
-          </button>
-          <button onClick={onGuardar} disabled={guardando}
-            className="px-6 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800 disabled:opacity-60">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
+          <button onClick={onCerrar} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
+          <button onClick={onGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
             {guardando ? 'Guardando...' : esNuevo ? 'Crear Usuario' : 'Guardar Cambios'}
           </button>
         </div>
@@ -562,33 +366,11 @@ function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, 
   )
 }
 
-// ── Componentes auxiliares ────────────────────────────────────────────────────
-
-function TarjetaContador({ label, valor, badge, badgeColor, rojo }) {
-  return (
-    <div className={`bg-white rounded-xl border p-5 ${rojo && valor > 0 ? 'border-red-200' : 'border-gray-200'}`}>
-      <p className="text-xs text-gray-400 uppercase font-medium tracking-wide mb-1">{label}</p>
-      <p className={`text-3xl font-bold ${rojo && valor > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-        {valor}
-      </p>
-      {badge && (
-        <p className={`text-xs mt-1 font-medium ${badgeColor || 'text-gray-400'}`}>{badge}</p>
-      )}
-    </div>
-  )
-}
-
-function Campo({ label, value, onChange, type = 'text', placeholder = '' }) {
+function UCampo({ label, value, onChange, type = 'text', placeholder = '' }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <label className="field-label">{label}</label>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input" />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useRouteError } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -16,10 +17,10 @@ function RutaProtegida({ children }) {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">Cargando sistema...</p>
+      <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spinCw 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Cargando sistema...</p>
         </div>
       </div>
     )
@@ -73,6 +74,7 @@ function ErrorPagina() {
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <Routes>
@@ -90,8 +92,8 @@ export default function App() {
                     <Route path="/informes" element={<Reports />} errorElement={<ErrorPagina />} />
                     <Route path="/configuracion" element={<Settings />} errorElement={<ErrorPagina />} />
                     <Route path="/usuarios" element={<Users />} errorElement={<ErrorPagina />} />
-                    <Route path="*"                   element={<Navigate to="/" replace />} />
                     <Route path="/consulta/nueva" element={<NewConsultation />} errorElement={<ErrorPagina />} />
+                    <Route path="*"                   element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>
               </RutaProtegida>
@@ -100,5 +102,6 @@ export default function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   )
 }
