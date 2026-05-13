@@ -84,8 +84,8 @@ export default function DashboardEnfermera() {
           <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>
             Pacientes en proceso
           </h2>
-          {!cargProceso && (
-            <span className="badge badge-ok" style={{ marginLeft: 'auto' }}>{citasProceso.length}</span>
+          {!cargEnSala && (
+            <span className="badge badge-ok" style={{ marginLeft: 'auto' }}>{citasEnSala.length}</span>
           )}
         </div>
 
@@ -163,7 +163,7 @@ export default function DashboardEnfermera() {
             <tbody>
               {citasHoy.map(c => {
                 const pac  = c.expand?.paciente
-                const cfg  = ESTADO_COLOR[c.estado] || ESTADO_COLOR.pendiente
+                const cfg  = ESTADO_COLOR[c.estado] || ESTADO_COLOR.programada
                 return (
                   <tr key={c.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
