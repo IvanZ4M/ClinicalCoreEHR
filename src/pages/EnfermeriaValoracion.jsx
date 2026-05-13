@@ -87,6 +87,19 @@ export default function EnfermeriaValoracion() {
         estado:                   'completado',
       })
       await pb.collection('citas').update(citaId, { estado: 'en_consulta' })
+
+      // Notify the assigned doctor that the patient is ready
+      if (cita.medico) {
+        const nombrePac = paciente ? `${paciente.nombre} ${paciente.apellidos}` : 'El paciente'
+        pb.collection('notificaciones').create({
+          usuario_destino: cita.medico,
+          tipo: 'paciente_listo',
+          mensaje: `${nombrePac} está listo para consulta (valoración de enfermería completada)`,
+          cita: citaId,
+          leida: false,
+        }).catch(() => { /* fail silently if collection not yet created */ })
+      }
+
       navigate('/enfermeria')
     } catch (err) {
       setError('Error al guardar: ' + (err.data?.message || err.message))
