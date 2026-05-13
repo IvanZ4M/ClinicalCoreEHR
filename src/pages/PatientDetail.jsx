@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
+import { useAuth } from '../context/AuthContext'
+import { PATIENT_TABS_POR_ROL } from '../lib/roles'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
@@ -24,11 +26,15 @@ function formatearFechaHora(fechaISO) {
   return new Date(fechaISO).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-const TABS = ['Datos Personales', 'Antecedentes', 'Historial Médico', 'Consultas Previas']
+const TABS_TODOS = ['Datos Personales', 'Antecedentes', 'Historial Médico', 'Consultas Previas']
 
 export default function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { usuario } = useAuth()
+
+  const tabsPermitidos = PATIENT_TABS_POR_ROL[usuario?.rol] ?? TABS_TODOS
+
   const [tabActiva, setTabActiva]           = useState('Datos Personales')
   const [editandoAlergias, setEditando]     = useState(false)
   const [alergiasTxt, setAlergiasTxt]       = useState('')
@@ -138,7 +144,7 @@ export default function PatientDetail() {
 
       {/* ── Tabs ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-        {TABS.map(tab => (
+        {tabsPermitidos.map(tab => (
           <button key={tab} onClick={() => setTabActiva(tab)}
             className={`tab${tabActiva === tab ? ' active' : ''}`}>
             {tab}
