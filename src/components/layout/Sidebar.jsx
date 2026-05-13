@@ -1,16 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { ROLE_NAV_CONFIG, ROLE_LABELS, ROLES_CON_NUEVA_CONSULTA } from '../../lib/roles'
 import { I } from '../icons'
-
-const NAV = [
-  { path: '/',              Icon: I.Dashboard,    label: 'Panel de Control' },
-  { path: '/pacientes',     Icon: I.Patients,     label: 'Pacientes'        },
-  { path: '/citas',         Icon: I.Calendar,     label: 'Citas'            },
-  { path: '/informes',      Icon: I.Chart,        label: 'Informes'         },
-  { path: '/configuracion', Icon: I.Settings,     label: 'Configuración'    },
-]
-const ADMIN = { path: '/usuarios', Icon: I.User, label: 'Usuarios' }
 
 export default function Sidebar() {
   const location  = useLocation()
@@ -18,18 +10,19 @@ export default function Sidebar() {
   const { usuario, logout } = useAuth()
   const { isDark } = useTheme()
 
+  const rol   = usuario?.rol || 'medico'
+  const items = ROLE_NAV_CONFIG[rol] ?? ROLE_NAV_CONFIG['medico']
+
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
-
-  const items = usuario?.rol === 'administrador'
-    ? [...NAV.slice(0, 4), ADMIN, NAV[4]]
-    : NAV
 
   const handleLogout = () => { logout(); navigate('/login') }
 
   const initials = usuario
     ? `${usuario.nombre?.[0] || ''}${usuario.apellidos?.[0] || ''}`.toUpperCase()
     : 'US'
+
+  const rolLabel = ROLE_LABELS[rol] || rol
 
   return (
     <aside
@@ -99,34 +92,33 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* ── Nueva consulta CTA ─────────────────────────────────────── */}
-      <div style={{ padding: '0.75rem 0.625rem 0.625rem' }}>
-        <button
-          onClick={() => navigate('/consulta/nueva')}
-          className="btn btn-primary"
-          style={{ width: '100%', fontSize: '0.8125rem', gap: '0.375rem' }}
-        >
-          <I.Plus width={15} height={15} />
-          Nueva Consulta
-        </button>
-      </div>
+      {/* ── Nueva Consulta CTA — solo para médico ──────────────────── */}
+      {ROLES_CON_NUEVA_CONSULTA.includes(rol) && (
+        <div style={{ padding: '0.75rem 0.625rem 0.625rem' }}>
+          <button
+            onClick={() => navigate('/consulta/nueva')}
+            className="btn btn-primary"
+            style={{ width: '100%', fontSize: '0.8125rem', gap: '0.375rem' }}
+          >
+            <I.Plus width={15} height={15} />
+            Nueva Consulta
+          </button>
+        </div>
+      )}
 
       <div style={{ height: 1, background: 'var(--border)', margin: '0 0.625rem' }} />
 
       {/* ── User card ──────────────────────────────────────────────── */}
       <div style={{ padding: '0.75rem 0.625rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-        <div
-          className="avatar"
-          style={{ width: 32, height: 32, fontSize: '0.6875rem' }}
-        >
+        <div className="avatar" style={{ width: 32, height: 32, fontSize: '0.6875rem' }}>
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
             {usuario ? `${usuario.nombre} ${usuario.apellidos}` : 'Usuario'}
           </p>
-          <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {usuario?.rol || ''}
+          <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {rolLabel}
           </p>
         </div>
         <button
