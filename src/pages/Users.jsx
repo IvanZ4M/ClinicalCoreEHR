@@ -34,7 +34,7 @@ export default function Users() {
   const [form, setForm] = useState({
     nombre: '', apellidos: '', email: '',
     password: '', passwordConfirm: '',
-    rol: 'medico', cedula_profesional: '', especialidad: '', activo: true,
+    rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true,
   })
 
   const partesFiltro = ['id != ""']
@@ -50,7 +50,7 @@ export default function Users() {
   const bloqueados    = usuarios.filter(u => !u.activo).length
 
   const resetForm = () => {
-    setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', activo: true })
+    setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true })
     setErrorForm('')
   }
 
@@ -67,7 +67,7 @@ export default function Users() {
   }
 
   const abrirEditar = (usuario) => {
-    setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', activo: usuario.activo ?? true })
+    setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', consultorio: usuario.consultorio || '', activo: usuario.activo ?? true })
     setModalEditar(usuario); setErrorForm('')
   }
 
@@ -77,7 +77,7 @@ export default function Users() {
     if (form.password && form.password.length < 8) { setErrorForm('La contraseña debe tener al menos 8 caracteres.'); return }
     setGuardando(true); setErrorForm('')
     try {
-      const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, activo: form.activo }
+      const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, consultorio: form.consultorio, activo: form.activo }
       if (form.password) { datos.password = form.password; datos.passwordConfirm = form.passwordConfirm }
       await pb.collection('usuarios').update(modalEditar.id, datos)
       setModalEditar(null); resetForm(); recargar()
@@ -344,6 +344,9 @@ function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, 
             <UCampo label="Especialidad" value={form.especialidad} onChange={v => setForm({ ...form, especialidad: v })} placeholder="Ej: Pediatría, Cardiología..." />
           </div>
           <UCampo label="Cédula profesional" value={form.cedula_profesional} onChange={v => setForm({ ...form, cedula_profesional: v })} placeholder="Número de cédula" />
+          {form.rol === 'medico' && (
+            <UCampo label="Consultorio" value={form.consultorio} onChange={v => setForm({ ...form, consultorio: v })} placeholder="Ej: Consultorio 3, Sala B..." />
+          )}
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
             Usuario activo (puede iniciar sesión)

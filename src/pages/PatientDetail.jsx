@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
+import { useAuth } from '../context/AuthContext'
+import { PATIENT_TABS_POR_ROL } from '../lib/roles'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
+import ConsultasPrevias from '../components/ConsultasPrevias'
 
 function calcularEdad(fechaNacimiento) {
   if (!fechaNacimiento) return '—'
@@ -24,11 +27,15 @@ function formatearFechaHora(fechaISO) {
   return new Date(fechaISO).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-const TABS = ['Datos Personales', 'Antecedentes', 'Historial Médico', 'Consultas Previas']
+const TABS_TODOS = ['Datos Personales', 'Antecedentes', 'Historial Médico', 'Consultas Previas']
 
 export default function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { usuario } = useAuth()
+
+  const tabsPermitidos = PATIENT_TABS_POR_ROL[usuario?.rol] ?? TABS_TODOS
+
   const [tabActiva, setTabActiva]           = useState('Datos Personales')
   const [editandoAlergias, setEditando]     = useState(false)
   const [alergiasTxt, setAlergiasTxt]       = useState('')
@@ -138,7 +145,7 @@ export default function PatientDetail() {
 
       {/* ── Tabs ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-        {TABS.map(tab => (
+        {tabsPermitidos.map(tab => (
           <button key={tab} onClick={() => setTabActiva(tab)}
             className={`tab${tabActiva === tab ? ' active' : ''}`}>
             {tab}
@@ -354,48 +361,7 @@ export default function PatientDetail() {
 
       {/* ── TAB: Consultas Previas ────────────────────────────────── */}
       {tabActiva === 'Consultas Previas' && (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>
-              Historial de consultas ({consultas.length})
-            </h3>
-            <button onClick={() => navigate(`/consulta/nueva?paciente=${id}`)} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
-              <I.Plus width={13} height={13} /> Nueva Consulta
-            </button>
-          </div>
-          {consultas.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 1rem', color: 'var(--text-3)' }}>
-              <I.Stethoscope width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>Sin consultas previas</p>
-            </div>
-          ) : (
-            <div>
-              {consultas.map(c => (
-                <div key={c.id} className="row-hover" style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                    <div>
-                      <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)' }}>
-                        {c.motivo || 'Sin motivo registrado'}
-                      </p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-                        {c.expand?.medico ? `Dr. ${c.expand.medico.nombre} ${c.expand.medico.apellidos}` : 'Médico no asignado'}
-                        {' · '}{formatearFechaHora(c.fecha)}
-                      </p>
-                    </div>
-                    <span className={c.estado === 'completada' ? 'badge badge-ok' : 'badge badge-warn'} style={{ flexShrink: 0 }}>
-                      {c.estado === 'completada' ? 'Completada' : 'Borrador'}
-                    </span>
-                  </div>
-                  {c.plan_tratamiento && (
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginTop: '0.625rem', paddingTop: '0.625rem', borderTop: '1px solid var(--border)' }}>
-                      {c.plan_tratamiento}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ConsultasPrevias pacienteId={id} />
       )}
     </div>
   )
