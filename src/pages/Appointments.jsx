@@ -106,7 +106,7 @@ export default function Appointments() {
   const [cargandoConsultorio,   setCargandoConsultorio]   = useState(false)
 
   const [form, setForm] = useState({
-    paciente: '', medico: usuario?.id || '',
+    paciente: '', medico: rol === 'medico' ? (usuario?.id || '') : '',
     fecha_hora: '', tipo: 'consulta_general',
     estado: 'programada', consultorio: '', notas: '',
   })
@@ -141,8 +141,8 @@ export default function Appointments() {
     if (!medicoId) return
     setCargandoConsultorio(true)
     try {
-      const med = await pb.collection('usuarios').getOne(medicoId, { expand: 'consultorio_id' })
-      const nombreConsultorio = med.expand?.consultorio_id?.nombre || med.consultorio || ''
+      const med = await pb.collection('usuarios').getOne(medicoId)
+      const nombreConsultorio = med.consultorio || ''
       setForm(f => ({ ...f, consultorio: nombreConsultorio }))
       setConsultorioAutoFilled(!!nombreConsultorio)
     } catch { /* fail silently — consultorio stays empty */ }
@@ -150,7 +150,7 @@ export default function Appointments() {
   }
 
   const handleGuardar = async () => {
-    if (!form.paciente || !form.fecha_hora) { setErrorForm('El paciente y la fecha/hora son obligatorios.'); return }
+    if (!form.paciente || !form.fecha_hora || !form.medico) { setErrorForm('El paciente, la fecha/hora y el médico son obligatorios.'); return }
     setGuardando(true); setErrorForm('')
     try {
       const fechaFormateada = new Date(form.fecha_hora).toISOString().replace('T', ' ').slice(0, 19)
@@ -160,7 +160,7 @@ export default function Appointments() {
         consultorio: form.consultorio, notas: form.notas,
       })
       setModalAbierto(false)
-      setForm({ paciente: '', medico: usuario?.id || '', fecha_hora: '', tipo: 'consulta_general', estado: 'programada', consultorio: '', notas: '' })
+      setForm({ paciente: '', medico: rol === 'medico' ? (usuario?.id || '') : '', fecha_hora: '', tipo: 'consulta_general', estado: 'programada', consultorio: '', notas: '' })
       setConsultorioAutoFilled(false)
       recargar()
     } catch (err) {
