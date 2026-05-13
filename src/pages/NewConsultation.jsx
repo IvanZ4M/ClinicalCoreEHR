@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useRegistro } from '../hooks/usePocketBase'
+import { useTriagePaciente } from '../hooks/useTriage'
 import { useAuth } from '../context/AuthContext'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
@@ -87,7 +88,8 @@ export default function NewConsultation() {
   const { usuario } = useAuth()
   const pacienteId = searchParams.get('paciente')
 
-  const { dato: paciente } = useRegistro('pacientes', pacienteId)
+  const { dato: paciente }                   = useRegistro('pacientes', pacienteId)
+  const { triage, cargando: cargTriage }    = useTriagePaciente(pacienteId)
 
   const [motivo,         setMotivo]         = useState('')
   const [exploracion,    setExploracion]    = useState('')
@@ -130,6 +132,22 @@ export default function NewConsultation() {
     setResultadosMed(resultados)
     setMostrarMed(resultados.length > 0 && busquedaMed.length >= 2)
   }, [busquedaMed])
+
+  // Pre-populate vitals from triage when it loads
+  useEffect(() => {
+    if (!triage) return
+    setSignosVitales(sv => ({
+      presion_arterial:   triage.presion_arterial                 || sv.presion_arterial,
+      temperatura:        triage.temperatura?.toString()          || sv.temperatura,
+      frecuencia_cardiaca: triage.frecuencia_cardiaca?.toString() || sv.frecuencia_cardiaca,
+      peso:               triage.peso?.toString()                 || sv.peso,
+      talla:              triage.talla?.toString()                || sv.talla,
+      saturacion_o2:      triage.saturacion_oxigeno?.toString()   || sv.saturacion_o2,
+    }))
+    if (triage.queja_principal && !motivo) {
+      setMotivo(triage.queja_principal)
+    }
+  }, [triage])
 
   const agregarDiagnostico = (item) => {
     if (diagnosticos.find(d => d.codigo === item.codigo)) return
@@ -380,7 +398,16 @@ export default function NewConsultation() {
         </Seccion>
 
         {/* Signos vitales */}
-        <Seccion icon={<I.Activity width={15} height={15} />} titulo="Signos Vitales">
+        <Seccion
+          icon={<I.Activity width={15} height={15} />}
+          titulo="Signos Vitales"
+          badge={triage ? (
+            <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--ok-dim)', color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <I.Check width={10} height={10} />
+              Registrado por Enf. {triage.expand?.enfermera_id?.nombre || 'Enfermería'}
+            </span>
+          ) : null}
+        >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
             <CampoSigno label="Presión Arterial"  unidad="mmHg" placeholder="120/80"
               valor={signosVitales.presion_arterial}
@@ -666,7 +693,7 @@ export default function NewConsultation() {
   )
 }
 
-function Seccion({ icon, titulo, children }) {
+function Seccion({ icon, titulo, badge, children }) {
   return (
     <div className="card" style={{ padding: '1.25rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-3)' }}>
@@ -674,6 +701,7 @@ function Seccion({ icon, titulo, children }) {
         <h2 style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {titulo}
         </h2>
+        {badge && <div style={{ marginLeft: 'auto' }}>{badge}</div>}
       </div>
       {children}
     </div>

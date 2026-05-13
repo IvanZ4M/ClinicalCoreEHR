@@ -1,6 +1,9 @@
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useColeccion } from '../hooks/usePocketBase'
+import { useTriageRealtime } from '../hooks/useTriage'
+import pb from '../lib/pb'
 import { I } from '../components/icons'
 
 function obtenerSaludo() {
@@ -65,8 +68,11 @@ function StatCard({ label, value, sub, Icon, colorVar, dimVar }) {
 }
 
 export default function Dashboard() {
-  const navigate  = useNavigate()
+  const navigate    = useNavigate()
   const { usuario } = useAuth()
+
+  const [notificacion,    setNotificacion]    = useState(null)
+  const recargarCitasRef                      = useRef(null)
 
   const hoy = new Date()
   const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
@@ -75,13 +81,29 @@ export default function Dashboard() {
     .toISOString().replace('T', ' ').slice(0, 19)
 
   const { datos: todosLosPacientes } = useColeccion('pacientes', { filtro: 'activo = true' })
-  const { datos: citasHoy }          = useColeccion('citas', {
+  const { datos: citasHoy, recargar: recargarCitas } = useColeccion('citas', {
     filtro: `fecha_hora >= "${inicioDia}" && fecha_hora <= "${finDia}"`,
     orden: 'fecha_hora', expandir: 'paciente,medico',
   })
   const { datos: informesPendientes } = useColeccion('consultas', { filtro: 'estado = "borrador"' })
   const { datos: todasLasCitas }      = useColeccion('citas', { filtro: 'estado != "cancelada"' })
   const { datos: diagnosticos }       = useColeccion('diagnosticos', { porPagina: 500 })
+  const { datos: triagesHoy }         = useColeccion('triage', {
+    filtro: `created >= "${inicioDia}" && created <= "${finDia}" && estado = "completado"`,
+  })
+
+  // Keep ref current so realtime callback can trigger reload without stale closure
+  recargarCitasRef.current = recargarCitas
+
+  useTriageRealtime(async (record) => {
+    try {
+      const pac = await pb.collection('pacientes').getOne(record.paciente_id)
+      setNotificacion({ nombre: `${pac.nombre} ${pac.apellidos}`, id: record.id })
+    } catch {
+      setNotificacion({ nombre: 'Paciente', id: record.id })
+    }
+    recargarCitasRef.current?.()
+  })
 
   const diagnosticosFrecuentes = (() => {
     const conteo = {}
@@ -97,8 +119,33 @@ export default function Dashboard() {
     c => c.estado === 'programada' || c.estado === 'confirmada'
   ).length
 
+  const tieneTriageHoy = (citaId) => triagesHoy.some(t => t.cita_id === citaId)
+
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }} className="anim-fade">
+
+      {/* ── Notificación triage ──────────────────────────────────── */}
+      {notificacion && (
+        <div className="anim-slide-left" style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          background: 'var(--ok-dim)', border: '1px solid var(--ok)',
+          borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem',
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--ok)', flexShrink: 0 }} />
+          <p style={{ flex: 1, fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
+            Paciente listo —{' '}
+            <strong>{notificacion.nombre}</strong>
+            {' '}ha completado la valoración inicial de enfermería.
+          </p>
+          <button
+            onClick={() => setNotificacion(null)}
+            className="btn-icon btn-ghost"
+            style={{ padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}
+          >
+            <I.X width={14} height={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Header ───────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
@@ -190,16 +237,24 @@ export default function Dashboard() {
                 {citasHoy.map(cita => {
                   const pac = cita.expand?.paciente
                   const initials = pac ? `${pac.nombre?.[0] || ''}${pac.apellidos?.[0] || ''}` : '?'
+                  const conTriage = tieneTriageHoy(cita.id)
                   return (
-                    <tr key={cita.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <tr key={cita.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)', background: conTriage ? 'color-mix(in oklch, var(--ok) 6%, transparent)' : undefined }}>
                       <td style={{ padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                           <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.625rem' }}>
                             {initials}
                           </div>
-                          <span style={{ fontWeight: 500, color: 'var(--text)' }}>
-                            {pac ? `${pac.nombre} ${pac.apellidos}` : 'Desconocido'}
-                          </span>
+                          <div>
+                            <span style={{ fontWeight: 500, color: 'var(--text)' }}>
+                              {pac ? `${pac.nombre} ${pac.apellidos}` : 'Desconocido'}
+                            </span>
+                            {conTriage && (
+                              <span style={{ display: 'block', fontSize: '0.625rem', fontWeight: 600, color: 'var(--ok)', marginTop: 1 }}>
+                                ✓ Valorado por enfermería
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td style={{ padding: '0.75rem 1rem', color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums' }}>
