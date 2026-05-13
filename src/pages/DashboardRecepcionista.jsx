@@ -6,30 +6,37 @@ import { I } from '../components/icons'
 import pb from '../lib/pb'
 
 const ESTADO_COLOR = {
-  pendiente:   { color: 'var(--warn)',   dim: 'var(--warn-dim)',   label: 'Pendiente'   },
-  confirmada:  { color: 'var(--accent)', dim: 'var(--accent-dim)', label: 'Confirmada'  },
-  en_proceso:  { color: 'var(--ok)',     dim: 'var(--ok-dim)',     label: 'En proceso'  },
-  completada:  { color: 'var(--text-3)', dim: 'var(--bg)',         label: 'Completada'  },
-  cancelada:   { color: 'var(--danger)', dim: 'var(--danger-dim)', label: 'Cancelada'   },
+  programada:  { color: 'var(--accent)',       dim: 'var(--accent-dim)',             label: 'Programada'  },
+  confirmada:  { color: 'var(--ok)',           dim: 'var(--ok-dim)',                 label: 'Confirmada'  },
+  en_sala:     { color: 'var(--warn)',         dim: 'var(--warn-dim)',               label: 'En sala'     },
+  en_consulta: { color: 'var(--violet)',       dim: 'var(--violet-dim)',             label: 'En consulta' },
+  completada:  { color: 'var(--text-3)',       dim: 'var(--bg)',                     label: 'Completada'  },
+  cancelada:   { color: 'var(--danger)',       dim: 'var(--danger-dim)',             label: 'Cancelada'   },
+  no_acudio:   { color: 'oklch(52% 0.22 50)', dim: 'oklch(62% 0.18 50 / 0.12)',    label: 'No acudió'   },
 }
 
 function hoy() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function formatearHora(fechaISO) {
+  if (!fechaISO) return '—'
+  return new Date(fechaISO).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+}
+
 export default function DashboardRecepcionista() {
   const navigate    = useNavigate()
   const { usuario } = useAuth()
 
-  const filtroHoy = `fecha >= "${hoy()} 00:00:00" && fecha <= "${hoy()} 23:59:59"`
+  const filtroHoy = `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59"`
 
   const { datos: citasHoy, cargando, recargar } = useColeccion('citas', {
-    filtro: filtroHoy, orden: 'hora_inicio', expandir: 'paciente,medico',
+    filtro: filtroHoy, orden: 'fecha_hora', expandir: 'paciente,medico',
   })
 
   const nombre = usuario?.nombre || 'Recepcionista'
 
-  const pendientes  = citasHoy.filter(c => c.estado === 'pendiente')
+  const pendientes  = citasHoy.filter(c => c.estado === 'programada')
   const confirmadas = citasHoy.filter(c => c.estado === 'confirmada')
   const enProceso   = citasHoy.filter(c => c.estado === 'en_proceso')
   const completadas = citasHoy.filter(c => c.estado === 'completada')
@@ -113,7 +120,7 @@ export default function DashboardRecepcionista() {
                       </div>
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: 'var(--text-2)' }}>
-                      {c.hora_inicio || '—'}
+                      {formatearHora(c.fecha_hora)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)' }}>
                       {med ? `Dr. ${med.nombre} ${med.apellidos}` : '—'}
@@ -168,7 +175,7 @@ export default function DashboardRecepcionista() {
                 return (
                   <tr key={c.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
-                      {c.hora_inicio || '—'}
+                      {formatearHora(c.fecha_hora)}
                     </td>
                     <td style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text)' }}>
                       {pac ? `${pac.nombre} ${pac.apellidos}` : '—'}
