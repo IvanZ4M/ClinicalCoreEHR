@@ -5,25 +5,32 @@ import { saludo } from '../lib/roles'
 import { I } from '../components/icons'
 
 const ESTADO_COLOR = {
-  pendiente:   { color: 'var(--warn)',   dim: 'var(--warn-dim)',   label: 'Pendiente'   },
-  confirmada:  { color: 'var(--accent)', dim: 'var(--accent-dim)', label: 'Confirmada'  },
-  en_proceso:  { color: 'var(--ok)',     dim: 'var(--ok-dim)',     label: 'En proceso'  },
-  completada:  { color: 'var(--text-3)', dim: 'var(--bg)',         label: 'Completada'  },
-  cancelada:   { color: 'var(--danger)', dim: 'var(--danger-dim)', label: 'Cancelada'   },
+  programada:  { color: 'var(--accent)',       dim: 'var(--accent-dim)',             label: 'Programada'  },
+  confirmada:  { color: 'var(--ok)',           dim: 'var(--ok-dim)',                 label: 'Confirmada'  },
+  en_sala:     { color: 'var(--warn)',         dim: 'var(--warn-dim)',               label: 'En sala'     },
+  en_consulta: { color: 'var(--violet)',       dim: 'var(--violet-dim)',             label: 'En consulta' },
+  completada:  { color: 'var(--text-3)',       dim: 'var(--bg)',                     label: 'Completada'  },
+  cancelada:   { color: 'var(--danger)',       dim: 'var(--danger-dim)',             label: 'Cancelada'   },
+  no_acudio:   { color: 'oklch(52% 0.22 50)', dim: 'oklch(62% 0.18 50 / 0.12)',    label: 'No acudió'   },
 }
 
 function hoy() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function formatearHora(fechaISO) {
+  if (!fechaISO) return '—'
+  return new Date(fechaISO).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+}
+
 export default function DashboardEnfermera() {
   const navigate       = useNavigate()
   const { usuario }    = useAuth()
 
-  const filtroHoy = `fecha >= "${hoy()} 00:00:00" && fecha <= "${hoy()} 23:59:59"`
+  const filtroHoy = `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59"`
 
-  const { datos: citasHoy,      cargando: cargCitas }    = useColeccion('citas', { filtro: filtroHoy,              orden: 'hora_inicio', expandir: 'paciente' })
-  const { datos: citasProceso,  cargando: cargProceso }  = useColeccion('citas', { filtro: `${filtroHoy} && estado = "en_proceso"`, orden: 'hora_inicio', expandir: 'paciente' })
+  const { datos: citasHoy,     cargando: cargCitas }   = useColeccion('citas', { filtro: filtroHoy,                              orden: 'fecha_hora', expandir: 'paciente' })
+  const { datos: citasEnSala,  cargando: cargEnSala }  = useColeccion('citas', { filtro: `${filtroHoy} && estado = "en_sala"`,   orden: 'fecha_hora', expandir: 'paciente' })
 
   const nombre = usuario?.nombre || 'Enfermera'
 
@@ -55,8 +62,8 @@ export default function DashboardEnfermera() {
           dimVar="var(--accent-dim)"
         />
         <StatCard
-          label="En proceso"
-          value={cargProceso ? '—' : citasProceso.length}
+          label="En sala"
+          value={cargEnSala ? '—' : citasEnSala.length}
           Icon={I.Activity}
           colorVar="var(--ok)"
           dimVar="var(--ok-dim)"
@@ -82,10 +89,10 @@ export default function DashboardEnfermera() {
           )}
         </div>
 
-        {cargProceso ? (
+        {cargEnSala ? (
           <CargandoFila />
-        ) : citasProceso.length === 0 ? (
-          <VacioFila texto="No hay pacientes en proceso en este momento" />
+        ) : citasEnSala.length === 0 ? (
+          <VacioFila texto="No hay pacientes en sala en este momento" />
         ) : (
           <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
             <thead>
@@ -96,7 +103,7 @@ export default function DashboardEnfermera() {
               </tr>
             </thead>
             <tbody>
-              {citasProceso.map(c => {
+              {citasEnSala.map(c => {
                 const pac = c.expand?.paciente
                 const initials = `${pac?.nombre?.[0] || ''}${pac?.apellidos?.[0] || ''}`
                 return (
@@ -108,7 +115,7 @@ export default function DashboardEnfermera() {
                       </div>
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem' }}>
-                      {c.hora_inicio || '—'}
+                      {formatearHora(c.fecha_hora)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)', maxWidth: 200 }}>
                       <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -160,7 +167,7 @@ export default function DashboardEnfermera() {
                 return (
                   <tr key={c.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
-                      {c.hora_inicio || '—'}
+                      {formatearHora(c.fecha_hora)}
                     </td>
                     <td style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text)' }}>
                       {pac ? `${pac.nombre} ${pac.apellidos}` : '—'}

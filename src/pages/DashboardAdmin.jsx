@@ -22,7 +22,7 @@ export default function DashboardAdmin() {
   const { datos: usuarios,   cargando: cargUsuarios } = useColeccion('usuarios',  { filtro: 'activo = true', orden: 'nombre' })
   const { datos: todosUsuarios }                       = useColeccion('usuarios',  {})
   const { datos: consultas,  cargando: cargConsultas } = useColeccion('consultas', { filtro: `created >= "${hoy()} 00:00:00"`, orden: '-created' })
-  const { datos: citasHoy,   cargando: cargCitas }     = useColeccion('citas',     { filtro: `fecha >= "${hoy()} 00:00:00" && fecha <= "${hoy()} 23:59:59"`, expandir: 'medico' })
+  const { datos: citasHoy,   cargando: cargCitas }     = useColeccion('citas',     { filtro: `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59"`, expandir: 'medico' })
 
   const nombre = usuario?.nombre || 'Admin'
 
