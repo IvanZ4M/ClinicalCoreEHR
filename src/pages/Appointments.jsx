@@ -154,11 +154,26 @@ export default function Appointments() {
     setGuardando(true); setErrorForm('')
     try {
       const fechaFormateada = new Date(form.fecha_hora).toISOString().replace('T', ' ').slice(0, 19)
-      await pb.collection('citas').create({
+      const nuevaCita = await pb.collection('citas').create({
         paciente: form.paciente, medico: form.medico || usuario?.id,
         fecha_hora: fechaFormateada, tipo: form.tipo, estado: form.estado,
         consultorio: form.consultorio, notas: form.notas,
       })
+
+      // Notify the assigned doctor (skip if same user or no medico assigned)
+      const medicoId = form.medico || usuario?.id
+      if (medicoId && medicoId !== usuario?.id) {
+        const pacObj = pacientes.find(p => p.id === form.paciente)
+        const nombrePac = pacObj ? `${pacObj.nombre} ${pacObj.apellidos}` : 'un paciente'
+        pb.collection('notificaciones').create({
+          usuario_destino: medicoId,
+          tipo: 'nueva_cita',
+          mensaje: `Nueva cita programada con ${nombrePac} el ${new Date(form.fecha_hora).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
+          cita: nuevaCita.id,
+          leida: false,
+        }).catch(() => { /* fail silently if collection not yet created */ })
+      }
+
       setModalAbierto(false)
       setForm({ paciente: '', medico: rol === 'medico' ? (usuario?.id || '') : '', fecha_hora: '', tipo: 'consulta_general', estado: 'programada', consultorio: '', notas: '' })
       setConsultorioAutoFilled(false)
