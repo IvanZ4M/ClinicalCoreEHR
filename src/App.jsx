@@ -17,6 +17,8 @@ import Reports from './pages/Reports'
 import Users from './pages/Users'
 import Settings from './pages/Settings'
 import Unauthorized from './pages/Unauthorized'
+import EnfermeriaQueue from './pages/EnfermeriaQueue'
+import EnfermeriaValoracion from './pages/EnfermeriaValoracion'
 
 // ── Spinner de carga inicial ─────────────────────────────────────────────────
 function Spinner() {
@@ -113,6 +115,19 @@ export default function App() {
                       <Route path="/citas" element={
                         <RoleGuard allowedRoles={[ROLES.MEDICO, ROLES.ENFERMERA, ROLES.RECEPCIONISTA]}>
                           <Appointments />
+                        </RoleGuard>
+                      } errorElement={<ErrorPagina />} />
+
+                      {/* Solo enfermera */}
+                      <Route path="/enfermeria" element={
+                        <RoleGuard allowedRoles={[ROLES.ENFERMERA]}>
+                          <EnfermeriaQueue />
+                        </RoleGuard>
+                      } errorElement={<ErrorPagina />} />
+
+                      <Route path="/enfermeria/:citaId" element={
+                        <RoleGuard allowedRoles={[ROLES.ENFERMERA]}>
+                          <EnfermeriaValoracion />
                         </RoleGuard>
                       } errorElement={<ErrorPagina />} />
 

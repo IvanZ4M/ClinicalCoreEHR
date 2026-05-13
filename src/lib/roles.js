@@ -36,9 +36,10 @@ export const ROLE_NAV_CONFIG = {
     { path: '/configuracion', Icon: I.Settings,   label: 'Configuración'    },
   ],
   enfermera: [
-    { path: '/',          Icon: I.Dashboard, label: 'Panel de Control' },
-    { path: '/citas',     Icon: I.Calendar,  label: 'Citas'            },
-    { path: '/pacientes', Icon: I.Patients,  label: 'Pacientes'        },
+    { path: '/',            Icon: I.Dashboard,    label: 'Panel de Control' },
+    { path: '/enfermeria',  Icon: I.Stethoscope,  label: 'Sala de espera'   },
+    { path: '/citas',       Icon: I.Calendar,     label: 'Citas'            },
+    { path: '/pacientes',   Icon: I.Patients,     label: 'Pacientes'        },
   ],
   recepcionista: [
     { path: '/',          Icon: I.Dashboard, label: 'Panel de Control' },
@@ -61,6 +62,7 @@ export const ROUTE_ROLES = {
   '/configuracion':  ['medico', 'administrador'],
   '/usuarios':       ['administrador'],
   '/consulta/nueva': ['medico'],
+  '/enfermeria':     ['enfermera'],
 }
 
 // ── El botón "Nueva Consulta" solo aparece para el médico ─────────────────────
