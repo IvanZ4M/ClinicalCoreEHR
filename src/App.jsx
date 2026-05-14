@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useRouteError } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -5,20 +6,21 @@ import { ROLES } from './lib/roles'
 import RoleGuard from './components/guards/RoleGuard'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import DashboardEnfermera from './pages/DashboardEnfermera'
-import DashboardRecepcionista from './pages/DashboardRecepcionista'
-import DashboardAdmin from './pages/DashboardAdmin'
-import Patients from './pages/Patients'
-import Appointments from './pages/Appointments'
-import PatientDetail from './pages/PatientDetail'
-import NewConsultation from './pages/NewConsultation'
-import Reports from './pages/Reports'
-import Users from './pages/Users'
-import Settings from './pages/Settings'
 import Unauthorized from './pages/Unauthorized'
-import EnfermeriaQueue from './pages/EnfermeriaQueue'
-import EnfermeriaValoracion from './pages/EnfermeriaValoracion'
+
+const Dashboard             = lazy(() => import('./pages/Dashboard'))
+const DashboardEnfermera    = lazy(() => import('./pages/DashboardEnfermera'))
+const DashboardRecepcionista = lazy(() => import('./pages/DashboardRecepcionista'))
+const DashboardAdmin        = lazy(() => import('./pages/DashboardAdmin'))
+const Patients              = lazy(() => import('./pages/Patients'))
+const Appointments          = lazy(() => import('./pages/Appointments'))
+const PatientDetail         = lazy(() => import('./pages/PatientDetail'))
+const NewConsultation       = lazy(() => import('./pages/NewConsultation'))
+const Reports               = lazy(() => import('./pages/Reports'))
+const Users                 = lazy(() => import('./pages/Users'))
+const Settings              = lazy(() => import('./pages/Settings'))
+const EnfermeriaQueue       = lazy(() => import('./pages/EnfermeriaQueue'))
+const EnfermeriaValoracion  = lazy(() => import('./pages/EnfermeriaValoracion'))
 
 // ── Spinner de carga inicial ─────────────────────────────────────────────────
 function Spinner() {
@@ -95,6 +97,7 @@ export default function App() {
               element={
                 <RutaProtegida>
                   <Layout>
+                    <Suspense fallback={<Spinner />}>
                     <Routes>
                       {/* Dashboard dinámico por rol */}
                       <Route path="/" element={<DashboardPorRol />} errorElement={<ErrorPagina />} />
@@ -161,6 +164,7 @@ export default function App() {
                       {/* Cualquier ruta desconocida → dashboard del rol */}
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
+                    </Suspense>
                   </Layout>
                 </RutaProtegida>
               }

@@ -1,11 +1,21 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import log from 'electron-log/main.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isDev = process.argv.includes('--dev');
+
+// ── Logging ──────────────────────────────────────────────────────────────────
+log.transports.file.resolvePathFn = () =>
+  path.join(app.getPath('userData'), 'logs', 'clinicalcore.log');
+log.transports.file.maxSize = 10 * 1024 * 1024; // 10 MB
+
+process.on('uncaughtException', (error) => {
+  log.error('Error no manejado:', error);
+});
 
 let mainWindow;
 
@@ -43,6 +53,7 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
+    log.info('ClinicalCore EHR iniciado en modo desarrollo');
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 
@@ -56,6 +67,8 @@ function createWindow() {
     // VULN-FIX (ÁREA 1): deshabilitar "Inspeccionar elemento" en el menú
     // contextual para que no haya atajo hacia las DevTools.
     mainWindow.webContents.on('context-menu', (e) => e.preventDefault());
+
+    log.info('ClinicalCore EHR iniciado — versión', app.getVersion());
   }
 
   mainWindow.on('closed', () => {
