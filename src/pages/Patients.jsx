@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useColeccion } from '../hooks/usePocketBase'
 import pb from '../lib/pb'
+import { sanitizePatientData } from '../lib/sanitize'
 import { I } from '../components/icons'
 
 function calcularEdad(fechaNacimiento) {
@@ -48,7 +49,8 @@ export default function Patients() {
     setGuardando(true)
     setErrorForm('')
     try {
-      await pb.collection('pacientes').create(form)
+      // VULN-FIX (ÁREA 4): sanitizar datos antes de enviar a PocketBase
+      await pb.collection('pacientes').create(sanitizePatientData(form))
       setModalAbierto(false)
       setForm(FORM_EMPTY)
       recargar()

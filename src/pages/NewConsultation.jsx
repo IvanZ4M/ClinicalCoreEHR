@@ -297,7 +297,13 @@ export default function NewConsultation() {
       doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal')
       doc.text('Documento generado por ClinicalCore EHR - Valido solo con firma del medico', ancho / 2, alturaPagina - 5, { align: 'center' })
 
-      const nombreArchivo = `Receta_${paciente.apellidos}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}.pdf`
+      // VULN-FIX (ÁREA 6): el nombre del archivo NO debe incluir datos del
+      // paciente. Un nombre predecible (apellido + fecha) permite identificar
+      // a quién pertenece una receta si el archivo queda expuesto en el sistema.
+      // Se usa un identificador opaco: ID corto de la consulta + timestamp.
+      const timestamp = Date.now()
+      const idOpaco   = (consultaId || 'borrador').substring(0, 8)
+      const nombreArchivo = `Receta_${idOpaco}_${timestamp}.pdf`
       doc.save(nombreArchivo)
 
       if (consultaId) {
