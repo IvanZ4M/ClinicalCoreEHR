@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
+import { validators } from '../lib/validators'
+import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
@@ -30,12 +32,50 @@ export default function Users() {
   const [guardando,    setGuardando]    = useState(false)
   const [errorForm,    setErrorForm]    = useState('')
   const [confirmBlock, setConfirmBlock] = useState(null)
+  const [formErrors,   setFormErrors]   = useState({})
+  const [formTouched,  setFormTouched]  = useState({})
 
   const [form, setForm] = useState({
     nombre: '', apellidos: '', email: '',
     password: '', passwordConfirm: '',
     rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true,
   })
+
+  const getUserRules = (esNuevo) => ({
+    nombre:    validators.nombre,
+    apellidos: validators.apellido,
+    email:     validators.emailRequired,
+    ...(esNuevo
+      ? { password: validators.password }
+      : form.password ? { password: validators.password } : {}),
+    passwordConfirm: (v) => {
+      if (esNuevo || form.password) {
+        return v !== form.password ? 'Las contraseñas no coinciden' : null
+      }
+      return null
+    },
+  })
+
+  const handleUserBlur = (field, esNuevo) => {
+    setFormTouched(t => ({ ...t, [field]: true }))
+    const rules = getUserRules(esNuevo)
+    if (rules[field]) {
+      setFormErrors(e => ({ ...e, [field]: rules[field](form[field]) }))
+    }
+  }
+
+  const validateAllUserFields = (esNuevo) => {
+    const rules = getUserRules(esNuevo)
+    const newErrors = {}
+    let isValid = true
+    for (const [field, rule] of Object.entries(rules)) {
+      const err = rule(form[field])
+      if (err) { newErrors[field] = err; isValid = false }
+    }
+    setFormErrors(newErrors)
+    setFormTouched(Object.keys(rules).reduce((a, k) => ({ ...a, [k]: true }), {}))
+    return isValid
+  }
 
   const partesFiltro = ['id != ""']
   if (filtroRol) partesFiltro.push(`rol = "${filtroRol}"`)
@@ -52,12 +92,12 @@ export default function Users() {
   const resetForm = () => {
     setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true })
     setErrorForm('')
+    setFormErrors({})
+    setFormTouched({})
   }
 
   const handleCrear = async () => {
-    if (!form.nombre || !form.apellidos || !form.email || !form.password) { setErrorForm('Nombre, apellidos, correo y contraseña son obligatorios.'); return }
-    if (form.password !== form.passwordConfirm) { setErrorForm('Las contraseñas no coinciden.'); return }
-    if (form.password.length < 8) { setErrorForm('La contraseña debe tener al menos 8 caracteres.'); return }
+    if (!validateAllUserFields(true)) return
     setGuardando(true); setErrorForm('')
     try {
       await pb.collection('usuarios').create({ ...form })
@@ -68,13 +108,11 @@ export default function Users() {
 
   const abrirEditar = (usuario) => {
     setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', consultorio: usuario.consultorio || '', activo: usuario.activo ?? true })
-    setModalEditar(usuario); setErrorForm('')
+    setModalEditar(usuario); setErrorForm(''); setFormErrors({}); setFormTouched({})
   }
 
   const handleEditar = async () => {
-    if (!form.nombre || !form.apellidos || !form.email) { setErrorForm('Nombre, apellidos y correo son obligatorios.'); return }
-    if (form.password && form.password !== form.passwordConfirm) { setErrorForm('Las contraseñas no coinciden.'); return }
-    if (form.password && form.password.length < 8) { setErrorForm('La contraseña debe tener al menos 8 caracteres.'); return }
+    if (!validateAllUserFields(false)) return
     setGuardando(true); setErrorForm('')
     try {
       const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, consultorio: form.consultorio, activo: form.activo }
@@ -274,6 +312,8 @@ export default function Users() {
         <ModalUsuario
           titulo={modalEditar ? `Editar — ${modalEditar.nombre} ${modalEditar.apellidos}` : 'Nuevo Usuario'}
           form={form} setForm={setForm}
+          formErrors={formErrors} formTouched={formTouched}
+          onBlur={field => handleUserBlur(field, !modalEditar)}
           errorForm={errorForm} guardando={guardando}
           onGuardar={modalEditar ? handleEditar : handleCrear}
           onCerrar={() => { setModalAbierto(false); setModalEditar(null); resetForm() }}
@@ -309,7 +349,7 @@ export default function Users() {
   )
 }
 
-function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, onCerrar, esNuevo }) {
+function ModalUsuario({ titulo, form, setForm, formErrors, formTouched, onBlur, errorForm, guardando, onGuardar, onCerrar, esNuevo }) {
   return (
     <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
       <div className="card anim-scale-in" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
@@ -326,13 +366,33 @@ function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, 
 
         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <UCampo label="Nombre(s) *" value={form.nombre} onChange={v => setForm({ ...form, nombre: v })} />
-            <UCampo label="Apellidos *"  value={form.apellidos} onChange={v => setForm({ ...form, apellidos: v })} />
+            <FormField label="Nombre(s)" required error={formErrors.nombre} touched={formTouched.nombre}>
+              <input className="input" type="text" value={form.nombre}
+                onChange={e => setForm({ ...form, nombre: e.target.value })}
+                onBlur={() => onBlur('nombre')} />
+            </FormField>
+            <FormField label="Apellidos" required error={formErrors.apellidos} touched={formTouched.apellidos}>
+              <input className="input" type="text" value={form.apellidos}
+                onChange={e => setForm({ ...form, apellidos: e.target.value })}
+                onBlur={() => onBlur('apellidos')} />
+            </FormField>
           </div>
-          <UCampo label="Correo electrónico *" type="email" value={form.email} onChange={v => setForm({ ...form, email: v })} />
+          <FormField label="Correo electrónico" required error={formErrors.email} touched={formTouched.email}>
+            <input className="input" type="email" value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              onBlur={() => onBlur('email')} />
+          </FormField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <UCampo label={esNuevo ? 'Contraseña *' : 'Nueva contraseña (opcional)'} type="password" value={form.password} onChange={v => setForm({ ...form, password: v })} placeholder="Mínimo 8 caracteres" />
-            <UCampo label="Confirmar contraseña" type="password" value={form.passwordConfirm} onChange={v => setForm({ ...form, passwordConfirm: v })} placeholder="Repetir contraseña" />
+            <FormField label={esNuevo ? 'Contraseña' : 'Nueva contraseña (opcional)'} required={esNuevo} error={formErrors.password} touched={formTouched.password}>
+              <input className="input" type="password" value={form.password} placeholder="Mínimo 8 caracteres"
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                onBlur={() => onBlur('password')} />
+            </FormField>
+            <FormField label="Confirmar contraseña" error={formErrors.passwordConfirm} touched={formTouched.passwordConfirm}>
+              <input className="input" type="password" value={form.passwordConfirm} placeholder="Repetir contraseña"
+                onChange={e => setForm({ ...form, passwordConfirm: e.target.value })}
+                onBlur={() => onBlur('passwordConfirm')} />
+            </FormField>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
@@ -341,11 +401,23 @@ function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, 
                 {ROLES.map(r => <option key={r.valor} value={r.valor}>{r.etiqueta}</option>)}
               </select>
             </div>
-            <UCampo label="Especialidad" value={form.especialidad} onChange={v => setForm({ ...form, especialidad: v })} placeholder="Ej: Pediatría, Cardiología..." />
+            <div>
+              <label className="field-label">Especialidad</label>
+              <input className="input" type="text" value={form.especialidad} placeholder="Ej: Pediatría, Cardiología..."
+                onChange={e => setForm({ ...form, especialidad: e.target.value })} />
+            </div>
           </div>
-          <UCampo label="Cédula profesional" value={form.cedula_profesional} onChange={v => setForm({ ...form, cedula_profesional: v })} placeholder="Número de cédula" />
+          <div>
+            <label className="field-label">Cédula profesional</label>
+            <input className="input" type="text" value={form.cedula_profesional} placeholder="Número de cédula"
+              onChange={e => setForm({ ...form, cedula_profesional: e.target.value })} />
+          </div>
           {form.rol === 'medico' && (
-            <UCampo label="Consultorio" value={form.consultorio} onChange={v => setForm({ ...form, consultorio: v })} placeholder="Ej: Consultorio 3, Sala B..." />
+            <div>
+              <label className="field-label">Consultorio</label>
+              <input className="input" type="text" value={form.consultorio} placeholder="Ej: Consultorio 3, Sala B..."
+                onChange={e => setForm({ ...form, consultorio: e.target.value })} />
+            </div>
           )}
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
@@ -365,15 +437,6 @@ function ModalUsuario({ titulo, form, setForm, errorForm, guardando, onGuardar, 
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function UCampo({ label, value, onChange, type = 'text', placeholder = '' }) {
-  return (
-    <div>
-      <label className="field-label">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input" />
     </div>
   )
 }

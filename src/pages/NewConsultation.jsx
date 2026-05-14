@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useRegistro } from '../hooks/usePocketBase'
 import { useTriagePaciente } from '../hooks/useTriage'
 import { useAuth } from '../context/AuthContext'
+import { validators } from '../lib/validators'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
@@ -113,10 +114,36 @@ export default function NewConsultation() {
   const [mostrarMed,      setMostrarMed]      = useState(false)
   const [generandoPDF,    setGenerandoPDF]    = useState(false)
 
-  const [guardando,      setGuardando]      = useState(false)
-  const [error,          setError]          = useState('')
-  const [drawerAbierto,  setDrawerAbierto]  = useState(false)
+  const [guardando,       setGuardando]       = useState(false)
+  const [error,           setError]           = useState('')
+  const [drawerAbierto,   setDrawerAbierto]   = useState(false)
   const [consultaGuardada, setConsultaGuardada] = useState(null)
+  const [signosErrors,    setSignosErrors]    = useState({})
+  const [signosTouched,   setSignosTouched]   = useState({})
+  const [motivoTouched,   setMotivoTouched]   = useState(false)
+
+  const SIGNOS_RULES = {
+    presion_arterial:    validators.presionArterial,
+    temperatura:         validators.temperatura,
+    frecuencia_cardiaca: validators.frecuenciaCardiaca,
+    peso:                validators.peso,
+    talla:               validators.talla,
+    saturacion_o2:       validators.saturacionOxigeno,
+  }
+
+  const handleSignoChange = (field, value) => {
+    setSignosVitales(sv => ({ ...sv, [field]: value }))
+    if (signosTouched[field] && SIGNOS_RULES[field]) {
+      setSignosErrors(e => ({ ...e, [field]: SIGNOS_RULES[field](value) }))
+    }
+  }
+
+  const handleSignoBlur = (field) => {
+    setSignosTouched(t => ({ ...t, [field]: true }))
+    if (SIGNOS_RULES[field]) {
+      setSignosErrors(e => ({ ...e, [field]: SIGNOS_RULES[field](signosVitales[field]) }))
+    }
+  }
 
   const imc = (() => {
     const p = parseFloat(signosVitales.peso)
@@ -319,9 +346,23 @@ export default function NewConsultation() {
   }
 
   const handleGuardar = async (estadoFinal = 'completada') => {
+    setMotivoTouched(true)
     if (!motivo.trim()) { setError('El motivo de la consulta es obligatorio.'); return }
     if (!pacienteId)    { setError('No se especificó un paciente.'); return }
     if (guardando) return
+    // Validate clinical ranges for any vitals that were entered
+    const newErrors = {}
+    let hasRangeError = false
+    for (const [field, validator] of Object.entries(SIGNOS_RULES)) {
+      const err = validator(signosVitales[field])
+      if (err) { newErrors[field] = err; hasRangeError = true }
+    }
+    if (hasRangeError) {
+      setSignosErrors(newErrors)
+      setSignosTouched(Object.keys(SIGNOS_RULES).reduce((a, k) => ({ ...a, [k]: true }), {}))
+      setError('Corrige los valores de signos vitales fuera de rango antes de continuar.')
+      return
+    }
     setGuardando(true); setError('')
     try {
       const fechaHoy = new Date().toISOString().replace('T', ' ').slice(0, 19)
@@ -426,22 +467,34 @@ export default function NewConsultation() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
             <CampoSigno label="Presión Arterial"  unidad="mmHg" placeholder="120/80"
               valor={signosVitales.presion_arterial}
-              onChange={v => setSignosVitales({ ...signosVitales, presion_arterial: v })} />
+              onChange={v => handleSignoChange('presion_arterial', v)}
+              onBlur={() => handleSignoBlur('presion_arterial')}
+              error={signosErrors.presion_arterial} touched={signosTouched.presion_arterial} />
             <CampoSigno label="Temperatura"        unidad="°C"   placeholder="36.5" tipo="number"
               valor={signosVitales.temperatura}
-              onChange={v => setSignosVitales({ ...signosVitales, temperatura: v })} />
+              onChange={v => handleSignoChange('temperatura', v)}
+              onBlur={() => handleSignoBlur('temperatura')}
+              error={signosErrors.temperatura} touched={signosTouched.temperatura} />
             <CampoSigno label="Frec. Cardíaca"     unidad="lpm"  placeholder="72" tipo="number"
               valor={signosVitales.frecuencia_cardiaca}
-              onChange={v => setSignosVitales({ ...signosVitales, frecuencia_cardiaca: v })} />
+              onChange={v => handleSignoChange('frecuencia_cardiaca', v)}
+              onBlur={() => handleSignoBlur('frecuencia_cardiaca')}
+              error={signosErrors.frecuencia_cardiaca} touched={signosTouched.frecuencia_cardiaca} />
             <CampoSigno label="Peso"     unidad="kg" placeholder="70"  tipo="number"
               valor={signosVitales.peso}
-              onChange={v => setSignosVitales({ ...signosVitales, peso: v })} />
+              onChange={v => handleSignoChange('peso', v)}
+              onBlur={() => handleSignoBlur('peso')}
+              error={signosErrors.peso} touched={signosTouched.peso} />
             <CampoSigno label="Talla"    unidad="cm" placeholder="170" tipo="number"
               valor={signosVitales.talla}
-              onChange={v => setSignosVitales({ ...signosVitales, talla: v })} />
+              onChange={v => handleSignoChange('talla', v)}
+              onBlur={() => handleSignoBlur('talla')}
+              error={signosErrors.talla} touched={signosTouched.talla} />
             <CampoSigno label="Saturación O₂" unidad="%" placeholder="98" tipo="number"
               valor={signosVitales.saturacion_o2}
-              onChange={v => setSignosVitales({ ...signosVitales, saturacion_o2: v })} />
+              onChange={v => handleSignoChange('saturacion_o2', v)}
+              onBlur={() => handleSignoBlur('saturacion_o2')}
+              error={signosErrors.saturacion_o2} touched={signosTouched.saturacion_o2} />
           </div>
           {imc && (
             <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-dim)', border: '1px solid color-mix(in oklch, var(--accent) 25%, transparent)', padding: '0.625rem 1rem', borderRadius: 'var(--radius-md)' }}>
@@ -737,10 +790,11 @@ function Seccion({ icon, titulo, badge, children }) {
   )
 }
 
-function CampoSigno({ label, unidad, placeholder, valor, onChange, tipo = 'text' }) {
+function CampoSigno({ label, unidad, placeholder, valor, onChange, onBlur, tipo = 'text', error, touched }) {
+  const showError = !!(touched && error)
   return (
-    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '0.75rem', border: '1px solid var(--border)' }}>
-      <label style={{ display: 'block', fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.06em', marginBottom: 6 }}>
+    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '0.75rem', border: `1px solid ${showError ? 'var(--danger)' : 'var(--border)'}` }}>
+      <label style={{ display: 'block', fontSize: '0.625rem', color: showError ? 'var(--danger)' : 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.06em', marginBottom: 6 }}>
         {label}
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -748,12 +802,19 @@ function CampoSigno({ label, unidad, placeholder, valor, onChange, tipo = 'text'
           type={tipo}
           value={valor}
           onChange={e => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 700, color: 'var(--text)', minWidth: 0, fontVariantNumeric: 'tabular-nums' }}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 700, color: showError ? 'var(--danger)' : 'var(--text)', minWidth: 0, fontVariantNumeric: 'tabular-nums' }}
           className="tabular"
+          aria-invalid={showError ? 'true' : undefined}
         />
         <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unidad}</span>
       </div>
+      {showError && (
+        <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', marginTop: '0.375rem', lineHeight: 1.3 }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }
