@@ -4,6 +4,7 @@ import { useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
+import StatusActionMenu from '../components/StatusActionMenu'
 
 const DIAS  = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -35,46 +36,6 @@ const TIPOS_CITA = [
   { valor: 'chequeo',          etiqueta: 'Chequeo de Rutina' },
 ]
 
-const TRANSICIONES = {
-  programada: {
-    recepcionista: [
-      { estado: 'confirmada', label: 'Confirmar llegada', color: 'var(--ok)',          destructivo: false },
-      { estado: 'no_acudio',  label: 'No acudió',         color: 'oklch(52% 0.22 50)', destructivo: true  },
-      { estado: 'cancelada',  label: 'Cancelar',          color: 'var(--danger)',       destructivo: true  },
-    ],
-    medico:        [{ estado: 'cancelada', label: 'Cancelar', color: 'var(--danger)', destructivo: true }],
-    enfermera:     [],
-    administrador: [],
-  },
-  confirmada: {
-    recepcionista: [
-      { estado: 'en_sala',   label: 'Llegó a sala', color: 'var(--warn)',          destructivo: false },
-      { estado: 'no_acudio', label: 'No acudió',    color: 'oklch(52% 0.22 50)',   destructivo: true  },
-      { estado: 'cancelada', label: 'Cancelar',     color: 'var(--danger)',         destructivo: true  },
-    ],
-    enfermera:     [{ estado: 'en_sala',   label: 'Llegó a sala', color: 'var(--warn)',    destructivo: false }],
-    medico:        [{ estado: 'cancelada', label: 'Cancelar',     color: 'var(--danger)',  destructivo: true  }],
-    administrador: [],
-  },
-  en_sala: {
-    recepcionista: [{ estado: 'cancelada',   label: 'Cancelar',        color: 'var(--danger)',  destructivo: true  }],
-    enfermera:     [{ estado: 'en_consulta', label: 'Derivar a médico', color: 'var(--violet)', destructivo: false }],
-    medico: [
-      { estado: 'en_consulta', label: 'Iniciar consulta', color: 'var(--violet)', destructivo: false, accion: 'navegar_consulta' },
-      { estado: 'cancelada',   label: 'Cancelar',         color: 'var(--danger)', destructivo: true  },
-    ],
-    administrador: [],
-  },
-  en_consulta: {
-    medico:        [{ estado: 'completada', label: 'Finalizar consulta', color: 'var(--ok)', destructivo: false }],
-    recepcionista: [],
-    enfermera:     [],
-    administrador: [],
-  },
-  completada:  { medico: [], enfermera: [], recepcionista: [], administrador: [] },
-  cancelada:   { medico: [], enfermera: [], recepcionista: [], administrador: [] },
-  no_acudio:   { medico: [], enfermera: [], recepcionista: [], administrador: [] },
-}
 
 function formatearHora(fechaISO) {
   if (!fechaISO) return '—'
@@ -95,6 +56,8 @@ export default function Appointments() {
   const { usuario } = useAuth()
   const hoy = new Date()
   const rol = usuario?.rol || 'medico'
+  const esMedico = rol === 'medico'
+  const filtroMedico = esMedico && usuario?.id ? `medico = "${usuario.id}" && ` : ''
 
   const [mesActual,             setMesActual]             = useState(hoy.getMonth())
   const [anioActual,            setAnioActual]            = useState(hoy.getFullYear())
@@ -116,7 +79,7 @@ export default function Appointments() {
   const finMes    = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia} 23:59:59`
 
   const { datos: citasMes, recargar } = useColeccion('citas', {
-    filtro: `fecha_hora >= "${inicioMes}" && fecha_hora <= "${finMes}"`,
+    filtro: `${filtroMedico}fecha_hora >= "${inicioMes}" && fecha_hora <= "${finMes}"`,
     orden: 'fecha_hora', expandir: 'paciente,medico',
   })
   const { datos: pacientes } = useColeccion('pacientes', { filtro: 'activo = true', orden: 'nombre' })
@@ -183,10 +146,6 @@ export default function Appointments() {
     } finally { setGuardando(false) }
   }
 
-  const cambiarEstado = async (citaId, nuevoEstado) => {
-    try { await pb.collection('citas').update(citaId, { estado: nuevoEstado }); recargar() }
-    catch (err) { console.error('Error al cambiar estado:', err) }
-  }
 
   const cerrarModal = () => { setModalAbierto(false); setErrorForm(''); setConsultorioAutoFilled(false) }
 
@@ -281,11 +240,11 @@ export default function Appointments() {
       </div>
 
       {/* ── Right column ──────────────────────────────────────────── */}
-      <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
         {/* Day agenda */}
-        <div className="card" style={{ padding: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexShrink: 0 }}>
             <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>
               {diaSeleccionado} de {MESES[mesActual]}
             </h3>
@@ -301,35 +260,35 @@ export default function Appointments() {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', maxHeight: 400, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: 'calc(100svh - 260px)' }}>
               {[...citasDia].sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora)).map(cita => {
                 const pac = cita.expand?.paciente
                 const col = ESTADO_COLOR[cita.estado] || ESTADO_COLOR.programada
                 return (
-                  <div key={cita.id} style={{ borderLeft: `3px solid ${col.border}`, borderRadius: `0 var(--radius-md) var(--radius-md) 0`, padding: '0.625rem', background: col.bg }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {pac ? `${pac.nombre} ${pac.apellidos}` : 'Paciente'}
-                        </p>
-                        <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 2 }}>
-                          {formatearHora(cita.fecha_hora)} · {TIPOS_CITA.find(t => t.valor === cita.tipo)?.etiqueta || cita.tipo}
-                        </p>
-                        {cita.consultorio && <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)' }}>{cita.consultorio}</p>}
-                      </div>
-                      <span className="badge" style={{ fontSize: '0.625rem', background: col.bg, color: col.text, flexShrink: 0 }}>
-                        {ESTADO_LABEL[cita.estado]}
-                      </span>
+                  <div key={cita.id} style={{ borderLeft: `3px solid ${col.border}`, borderRadius: `0 var(--radius-md) var(--radius-md) 0`, padding: '0.625rem 0.75rem', background: col.bg }}>
+                    {/* Row 1: patient name */}
+                    <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pac ? `${pac.nombre} ${pac.apellidos}` : 'Paciente'}
+                    </p>
+                    {/* Row 2: time + type */}
+                    <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 2 }}>
+                      {formatearHora(cita.fecha_hora)} · {TIPOS_CITA.find(t => t.valor === cita.tipo)?.etiqueta || cita.tipo}
+                      {cita.consultorio ? ` · ${cita.consultorio}` : ''}
+                    </p>
+                    {/* Row 3: status action — full width so dropdown has room */}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <StatusActionMenu
+                        citaId={cita.id}
+                        estadoActual={cita.estado}
+                        rolUsuario={rol}
+                        pacienteId={cita.paciente}
+                        pacienteNombre={pac ? `${pac.nombre} ${pac.apellidos}` : ''}
+                        size="sm"
+                        onSuccess={(nuevoEstado) => {
+                          if (!nuevoEstado.startsWith('__optimistic__')) recargar()
+                        }}
+                      />
                     </div>
-                    <StatusQuickAction
-                      cita={cita}
-                      rol={rol}
-                      onCambiar={cambiarEstado}
-                      onNavegar={(citaId, pacienteId) => {
-                        cambiarEstado(citaId, 'en_consulta')
-                        navigate(`/consulta/nueva?paciente=${pacienteId}`)
-                      }}
-                    />
                   </div>
                 )
               })}
@@ -458,60 +417,6 @@ export default function Appointments() {
   )
 }
 
-function StatusQuickAction({ cita, rol, onCambiar, onNavegar }) {
-  const [pendienteConf, setPendienteConf] = useState(null)
-  const acciones = TRANSICIONES[cita.estado]?.[rol] ?? []
-  if (acciones.length === 0) return null
-
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.375rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
-      {pendienteConf ? (
-        <>
-          <p style={{ fontSize: '0.6875rem', color: 'var(--text-2)', flex: '1 1 100%' }}>
-            ¿Confirmar: <strong>{pendienteConf.label}</strong>?
-          </p>
-          <button
-            onClick={() => {
-              if (pendienteConf.accion === 'navegar_consulta') {
-                onNavegar(cita.id, cita.paciente)
-              } else {
-                onCambiar(cita.id, pendienteConf.estado)
-              }
-              setPendienteConf(null)
-            }}
-            style={{ fontSize: '0.6875rem', fontWeight: 600, color: pendienteConf.color, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Sí, confirmar
-          </button>
-          <button
-            onClick={() => setPendienteConf(null)}
-            style={{ fontSize: '0.6875rem', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            No
-          </button>
-        </>
-      ) : (
-        acciones.map(accion => (
-          <button
-            key={accion.estado}
-            onClick={() => {
-              if (accion.destructivo) {
-                setPendienteConf(accion)
-              } else if (accion.accion === 'navegar_consulta') {
-                onNavegar(cita.id, cita.paciente)
-              } else {
-                onCambiar(cita.id, accion.estado)
-              }
-            }}
-            style={{ fontSize: '0.6875rem', fontWeight: accion.destructivo ? 500 : 600, color: accion.color, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            {accion.label}
-          </button>
-        ))
-      )}
-    </div>
-  )
-}
 
 function MInput({ label, value, onChange, type = 'text', placeholder = '' }) {
   return (

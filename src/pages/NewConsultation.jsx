@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useRegistro } from '../hooks/usePocketBase'
 import { useTriagePaciente } from '../hooks/useTriage'
@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
+
+const SeguimientoDrawer = lazy(() => import('../components/SeguimientoDrawer'))
 
 const CIE10_COMUNES = [
   { codigo: 'J00',   desc: 'Nasofaringitis aguda (resfriado común)' },
@@ -111,8 +113,10 @@ export default function NewConsultation() {
   const [mostrarMed,      setMostrarMed]      = useState(false)
   const [generandoPDF,    setGenerandoPDF]    = useState(false)
 
-  const [guardando, setGuardando] = useState(false)
-  const [error,     setError]     = useState('')
+  const [guardando,      setGuardando]      = useState(false)
+  const [error,          setError]          = useState('')
+  const [drawerAbierto,  setDrawerAbierto]  = useState(false)
+  const [consultaGuardada, setConsultaGuardada] = useState(null)
 
   const imc = (() => {
     const p = parseFloat(signosVitales.peso)
@@ -331,7 +335,12 @@ export default function NewConsultation() {
       if (medicamentos.length > 0 && estadoFinal === 'completada') {
         await generarRecetaPDF(consulta.id, planTextoFinal)
       }
-      navigate(`/pacientes/${pacienteId}`)
+      if (estadoFinal === 'completada') {
+        setConsultaGuardada(consulta)
+        setDrawerAbierto(true)
+      } else {
+        navigate(`/pacientes/${pacienteId}`)
+      }
     } catch (err) {
       console.error('Error al guardar consulta:', err)
       setError('Error al guardar: ' + (err.data?.message || err.message))
@@ -624,6 +633,20 @@ export default function NewConsultation() {
           </div>
         </div>
       </div>
+
+      {/* ── Follow-up drawer ───────────────────────────────────────── */}
+      <Suspense fallback={null}>
+        <SeguimientoDrawer
+          open={drawerAbierto}
+          onCerrar={() => navigate(`/pacientes/${pacienteId}`)}
+          pacienteId={pacienteId}
+          pacienteNombre={paciente ? `${paciente.nombre} ${paciente.apellidos}` : ''}
+          medicoId={usuario?.id}
+          medicoNombre={usuario ? `${usuario.nombre} ${usuario.apellidos}` : ''}
+          consultorio={usuario?.consultorio || ''}
+          planTratamiento={planTratamiento}
+        />
+      </Suspense>
 
       {/* ── Right sidebar ───────────────────────────────────────────── */}
       <div style={{ width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
