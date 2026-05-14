@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { validators } from '../lib/validators'
+import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
@@ -46,9 +48,13 @@ export default function Settings() {
   const [seguridad, setSeguridad] = useState({
     passwordActual: '', passwordNuevo: '', passwordConfirm: '',
   })
-  const [guardandoPass, setGuardandoPass] = useState(false)
-  const [mensajePass, setMensajePass]     = useState('')
-  const [errorPass,   setErrorPass]       = useState('')
+  const [guardandoPass, setGuardandoPass]   = useState(false)
+  const [mensajePass,   setMensajePass]     = useState('')
+  const [errorPass,     setErrorPass]       = useState('')
+  const [perfilErrors,  setPerfilErrors]    = useState({})
+  const [perfilTouched, setPerfilTouched]   = useState({})
+  const [passErrors,    setPassErrors]      = useState({})
+  const [passTouched,   setPassTouched]     = useState({})
 
   useEffect(() => {
     if (usuario) {
@@ -75,10 +81,27 @@ export default function Settings() {
     } finally { setGuardandoConsultorio(false) }
   }
 
+  const PERFIL_RULES = {
+    nombre:    validators.nombre,
+    apellidos: validators.apellido,
+    email:     validators.emailRequired,
+  }
+
+  const handlePerfilBlur = (field) => {
+    setPerfilTouched(t => ({ ...t, [field]: true }))
+    if (PERFIL_RULES[field]) setPerfilErrors(e => ({ ...e, [field]: PERFIL_RULES[field](perfil[field]) }))
+  }
+
   const handleGuardarPerfil = async () => {
-    if (!perfil.nombre || !perfil.apellidos || !perfil.email) {
-      setMensajePerfil('error:Nombre, apellidos y correo son obligatorios.'); return
+    const newErrors = {}
+    let ok = true
+    for (const [f, rule] of Object.entries(PERFIL_RULES)) {
+      const err = rule(perfil[f])
+      if (err) { newErrors[f] = err; ok = false }
     }
+    setPerfilErrors(newErrors)
+    setPerfilTouched({ nombre: true, apellidos: true, email: true })
+    if (!ok) return
     setGuardandoPerfil(true); setMensajePerfil('')
     try {
       await pb.collection('usuarios').update(usuario.id, {
@@ -92,11 +115,29 @@ export default function Settings() {
     } finally { setGuardandoPerfil(false) }
   }
 
+  const PASS_RULES = {
+    passwordActual:  (v) => !v ? 'Ingresa tu contraseña actual' : null,
+    passwordNuevo:   validators.password,
+    passwordConfirm: (v) => v !== seguridad.passwordNuevo ? 'Las contraseñas no coinciden' : null,
+  }
+
+  const handlePassBlur = (field) => {
+    setPassTouched(t => ({ ...t, [field]: true }))
+    if (PASS_RULES[field]) setPassErrors(e => ({ ...e, [field]: PASS_RULES[field](seguridad[field]) }))
+  }
+
   const handleCambiarPassword = async () => {
-    setErrorPass(''); setMensajePass('')
-    if (!seguridad.passwordActual) { setErrorPass('Ingresa tu contraseña actual.'); return }
-    if (seguridad.passwordNuevo.length < 8) { setErrorPass('La nueva contraseña debe tener al menos 8 caracteres.'); return }
-    if (seguridad.passwordNuevo !== seguridad.passwordConfirm) { setErrorPass('Las contraseñas nuevas no coinciden.'); return }
+    setMensajePass('')
+    const newErrors = {}
+    let ok = true
+    for (const [f, rule] of Object.entries(PASS_RULES)) {
+      const err = rule(seguridad[f])
+      if (err) { newErrors[f] = err; ok = false }
+    }
+    setPassErrors(newErrors)
+    setPassTouched({ passwordActual: true, passwordNuevo: true, passwordConfirm: true })
+    if (!ok) { setErrorPass(''); return }
+    setErrorPass('')
     setGuardandoPass(true)
     try {
       await pb.collection('usuarios').update(usuario.id, {
@@ -411,18 +452,33 @@ export default function Settings() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Campo label="Nombre(s) *" value={perfil.nombre} onChange={v => setPerfil({ ...perfil, nombre: v })} />
-            <Campo label="Apellidos *"  value={perfil.apellidos} onChange={v => setPerfil({ ...perfil, apellidos: v })} />
+            <FormField label="Nombre(s)" required error={perfilErrors.nombre} touched={perfilTouched.nombre}>
+              <input className="input" type="text" value={perfil.nombre}
+                onChange={e => setPerfil({ ...perfil, nombre: e.target.value })}
+                onBlur={() => handlePerfilBlur('nombre')} />
+            </FormField>
+            <FormField label="Apellidos" required error={perfilErrors.apellidos} touched={perfilTouched.apellidos}>
+              <input className="input" type="text" value={perfil.apellidos}
+                onChange={e => setPerfil({ ...perfil, apellidos: e.target.value })}
+                onBlur={() => handlePerfilBlur('apellidos')} />
+            </FormField>
           </div>
-          <Campo label="Correo electrónico *" type="email" value={perfil.email}
-            onChange={v => setPerfil({ ...perfil, email: v })} />
+          <FormField label="Correo electrónico" required error={perfilErrors.email} touched={perfilTouched.email}>
+            <input className="input" type="email" value={perfil.email}
+              onChange={e => setPerfil({ ...perfil, email: e.target.value })}
+              onBlur={() => handlePerfilBlur('email')} />
+          </FormField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Campo label="Cédula profesional" value={perfil.cedula_profesional}
-              onChange={v => setPerfil({ ...perfil, cedula_profesional: v })}
-              placeholder="Número de cédula" />
-            <Campo label="Especialidad" value={perfil.especialidad}
-              onChange={v => setPerfil({ ...perfil, especialidad: v })}
-              placeholder="Ej: Medicina General" />
+            <div>
+              <label className="field-label">Cédula profesional</label>
+              <input className="input" type="text" value={perfil.cedula_profesional} placeholder="Número de cédula"
+                onChange={e => setPerfil({ ...perfil, cedula_profesional: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label">Especialidad</label>
+              <input className="input" type="text" value={perfil.especialidad} placeholder="Ej: Medicina General"
+                onChange={e => setPerfil({ ...perfil, especialidad: e.target.value })} />
+            </div>
           </div>
 
           <MensajeEstado msg={mensajePerfil} okText="Perfil actualizado correctamente" />
@@ -451,16 +507,22 @@ export default function Settings() {
               </div>
             </div>
 
-            <Campo label="Contraseña actual" type="password" value={seguridad.passwordActual}
-              onChange={v => setSeguridad({ ...seguridad, passwordActual: v })}
-              placeholder="Tu contraseña actual" />
+            <FormField label="Contraseña actual" error={passErrors.passwordActual} touched={passTouched.passwordActual}>
+              <input className="input" type="password" value={seguridad.passwordActual} placeholder="Tu contraseña actual"
+                onChange={e => setSeguridad({ ...seguridad, passwordActual: e.target.value })}
+                onBlur={() => handlePassBlur('passwordActual')} />
+            </FormField>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <Campo label="Nueva contraseña" type="password" value={seguridad.passwordNuevo}
-                onChange={v => setSeguridad({ ...seguridad, passwordNuevo: v })}
-                placeholder="Mínimo 8 caracteres" />
-              <Campo label="Confirmar nueva contraseña" type="password" value={seguridad.passwordConfirm}
-                onChange={v => setSeguridad({ ...seguridad, passwordConfirm: v })}
-                placeholder="Repetir nueva contraseña" />
+              <FormField label="Nueva contraseña" error={passErrors.passwordNuevo} touched={passTouched.passwordNuevo}>
+                <input className="input" type="password" value={seguridad.passwordNuevo} placeholder="Mínimo 8 caracteres"
+                  onChange={e => setSeguridad({ ...seguridad, passwordNuevo: e.target.value })}
+                  onBlur={() => handlePassBlur('passwordNuevo')} />
+              </FormField>
+              <FormField label="Confirmar nueva contraseña" error={passErrors.passwordConfirm} touched={passTouched.passwordConfirm}>
+                <input className="input" type="password" value={seguridad.passwordConfirm} placeholder="Repetir nueva contraseña"
+                  onChange={e => setSeguridad({ ...seguridad, passwordConfirm: e.target.value })}
+                  onBlur={() => handlePassBlur('passwordConfirm')} />
+              </FormField>
             </div>
 
             {/* Password strength meter */}

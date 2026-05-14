@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import pb from '../lib/pb';
+import { logAuditEvent } from '../services/auditService';
 
 const AuthContext = createContext(null);
 
@@ -8,12 +9,10 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    // Escuchar cambios en la sesión (login / logout)
     const quitar = pb.authStore.onChange((token, record) => {
       setUsuario(record);
     });
 
-    // Verificar si ya hay sesión guardada y refrescarla
     const verificarSesion = async () => {
       if (pb.authStore.isValid) {
         try {
@@ -31,13 +30,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, contrasena) => {
-    const resultado = await pb
-      .collection('usuarios')
-      .authWithPassword(email, contrasena);
+    // VULN-FIX (ÁREA 7): registrar inicio de sesión exitoso en audit_log
+    const resultado = await pb.collection('usuarios').authWithPassword(email, contrasena);
+    logAuditEvent('LOGIN_OK', 'usuarios', resultado.record?.id);
     return resultado;
   };
 
   const logout = () => {
+    // VULN-FIX (ÁREA 7): registrar cierre de sesión
+    logAuditEvent('LOGOUT', 'usuarios', pb.authStore.record?.id);
     pb.authStore.clear();
   };
 
@@ -48,7 +49,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Hook para usar el contexto en cualquier componente
 export function useAuth() {
   const contexto = useContext(AuthContext);
   if (!contexto) {

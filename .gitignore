@@ -1,3 +1,9 @@
+# VULN-FIX (ÁREA 5): nunca commitear variables de entorno con credenciales
+.env
+.env.local
+.env.production
+.env.*.local
+
 # Logs
 logs
 *.log

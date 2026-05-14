@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
+import { validators } from '../lib/validators'
+import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 import StatusActionMenu from '../components/StatusActionMenu'
@@ -65,6 +67,7 @@ export default function Appointments() {
   const [modalAbierto,          setModalAbierto]          = useState(false)
   const [guardando,             setGuardando]             = useState(false)
   const [errorForm,             setErrorForm]             = useState('')
+  const [errorFecha,            setErrorFecha]            = useState('')
   const [consultorioAutoFilled, setConsultorioAutoFilled] = useState(false)
   const [cargandoConsultorio,   setCargandoConsultorio]   = useState(false)
 
@@ -113,10 +116,21 @@ export default function Appointments() {
   }
 
   const handleGuardar = async () => {
+    const fechaErr = validators.fechaCita(form.fecha_hora)
+    setErrorFecha(fechaErr || '')
     if (!form.paciente || !form.fecha_hora || !form.medico) { setErrorForm('El paciente, la fecha/hora y el médico son obligatorios.'); return }
+    if (fechaErr) return
     setGuardando(true); setErrorForm('')
     try {
+      // Validate no duplicate: same patient + medico + same datetime (excluding cancelled)
       const fechaFormateada = new Date(form.fecha_hora).toISOString().replace('T', ' ').slice(0, 19)
+      const duplicados = await pb.collection('citas').getList(1, 1, {
+        filter: `paciente = "${form.paciente}" && medico = "${form.medico}" && fecha_hora = "${fechaFormateada}" && estado != "cancelada"`,
+      })
+      if (duplicados.totalItems > 0) {
+        setErrorForm('Ya existe una cita para este paciente con este médico en esa fecha y hora.')
+        setGuardando(false); return
+      }
       const nuevaCita = await pb.collection('citas').create({
         paciente: form.paciente, medico: form.medico || usuario?.id,
         fecha_hora: fechaFormateada, tipo: form.tipo, estado: form.estado,
@@ -147,7 +161,7 @@ export default function Appointments() {
   }
 
 
-  const cerrarModal = () => { setModalAbierto(false); setErrorForm(''); setConsultorioAutoFilled(false) }
+  const cerrarModal = () => { setModalAbierto(false); setErrorForm(''); setErrorFecha(''); setConsultorioAutoFilled(false) }
 
   const esHoy = (dia) => dia === hoy.getDate() && mesActual === hoy.getMonth() && anioActual === hoy.getFullYear()
 
@@ -341,7 +355,11 @@ export default function Appointments() {
                 {medicos.map(m => <option key={m.id} value={m.id}>Dr. {m.nombre} {m.apellidos}</option>)}
               </MSelect>
 
-              <MInput label="Fecha y hora *" type="datetime-local" value={form.fecha_hora} onChange={v => setForm(f => ({ ...f, fecha_hora: v }))} />
+              <FormField label="Fecha y hora" required error={errorFecha} touched={!!errorFecha || !!form.fecha_hora}>
+                <input className="input" type="datetime-local" value={form.fecha_hora}
+                  onChange={e => { setForm(f => ({ ...f, fecha_hora: e.target.value })); setErrorFecha(validators.fechaCita(e.target.value) || '') }}
+                  onBlur={() => setErrorFecha(validators.fechaCita(form.fecha_hora) || '')} />
+              </FormField>
 
               <MSelect label="Tipo de consulta" value={form.tipo} onChange={v => setForm(f => ({ ...f, tipo: v }))}>
                 {TIPOS_CITA.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
@@ -418,14 +436,6 @@ export default function Appointments() {
 }
 
 
-function MInput({ label, value, onChange, type = 'text', placeholder = '' }) {
-  return (
-    <div>
-      <label className="field-label">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input" />
-    </div>
-  )
-}
 
 function MSelect({ label, value, onChange, children }) {
   return (
