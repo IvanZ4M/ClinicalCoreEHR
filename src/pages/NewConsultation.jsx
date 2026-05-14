@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useRegistro } from '../hooks/usePocketBase'
 import { useTriagePaciente } from '../hooks/useTriage'
 import { useAuth } from '../context/AuthContext'
@@ -90,6 +91,7 @@ export default function NewConsultation() {
   const [searchParams] = useSearchParams()
   const { usuario } = useAuth()
   const pacienteId = searchParams.get('paciente')
+  const citaId     = searchParams.get('cita')
 
   const { dato: paciente }                   = useRegistro('pacientes', pacienteId)
   const { triage, cargando: cargTriage }    = useTriagePaciente(pacienteId)
@@ -386,6 +388,13 @@ export default function NewConsultation() {
         await generarRecetaPDF(consulta.id, planTextoFinal)
       }
       if (estadoFinal === 'completada') {
+        if (citaId) {
+          try {
+            await pb.collection('citas').update(citaId, { estado: 'completada' })
+          } catch {
+            toast.warning('Consulta guardada, pero no se pudo actualizar el estado de la cita.')
+          }
+        }
         setConsultaGuardada(consulta)
         setDrawerAbierto(true)
       } else {
@@ -560,22 +569,14 @@ export default function NewConsultation() {
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {diagnosticos.map(dx => (
+              {diagnosticos.map((dx, idx) => (
                 <div key={dx.codigo}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--accent-dim)', border: '1px solid color-mix(in oklch, var(--accent) 20%, transparent)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem' }}>
                   <span className="mono" style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.8125rem', minWidth: 52 }}>{dx.codigo}</span>
                   <span style={{ color: 'var(--text)', fontSize: '0.8125rem', flex: 1 }}>{dx.desc}</span>
-                  <select value={dx.tipo} onChange={e => cambiarEstadoDx(dx.codigo, 'tipo', e.target.value)}
-                    className="input" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', width: 'auto' }}>
-                    <option value="principal">Principal</option>
-                    <option value="secundario">Secundario</option>
-                  </select>
-                  <select value={dx.estado} onChange={e => cambiarEstadoDx(dx.codigo, 'estado', e.target.value)}
-                    className="input" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', width: 'auto' }}>
-                    <option value="activo">Activo</option>
-                    <option value="cronico">Crónico</option>
-                    <option value="resuelto">Resuelto</option>
-                  </select>
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: idx === 0 ? 'var(--accent)' : 'var(--bg-subtle)', color: idx === 0 ? 'white' : 'var(--text-3)', border: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                    {idx === 0 ? 'Principal' : 'Secundario'}
+                  </span>
                   <button onClick={() => quitarDiagnostico(dx.codigo)}
                     className="btn btn-ghost btn-icon" style={{ color: 'var(--text-3)' }}>
                     <I.X width={14} height={14} />

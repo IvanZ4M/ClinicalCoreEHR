@@ -116,9 +116,9 @@ export default function Dashboard() {
     if (estado === 'programada' || estado === 'confirmada' || estado === 'en_sala') {
       try { await pb.collection('citas').update(cita.id, { estado: 'en_consulta' }) } catch {}
       recargarCitas()
-      navigate(`/consulta/nueva?paciente=${cita.paciente}`)
+      navigate(`/consulta/nueva?paciente=${cita.paciente}&cita=${cita.id}`)
     } else if (estado === 'en_consulta') {
-      navigate(`/consulta/nueva?paciente=${cita.paciente}`)
+      navigate(`/consulta/nueva?paciente=${cita.paciente}&cita=${cita.id}`)
     } else if (estado === 'completada') {
       navigate(`/pacientes/${cita.paciente}`)
     }

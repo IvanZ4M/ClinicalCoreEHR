@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useColeccion } from '../hooks/usePocketBase'
 import { useForm } from '../hooks/useForm'
 import { validators } from '../lib/validators'
+import { GRUPOS_SANGUINEOS } from '../lib/medicalConstants'
 import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { sanitizePatientData } from '../lib/sanitize'
@@ -148,7 +149,7 @@ export default function Patients() {
                         <div>
                           <p style={{ fontWeight: 600, color: 'var(--text)' }}>{p.nombre} {p.apellidos}</p>
                           <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
-                            {p.sexo || '—'} · {p.grupo_sanguineo || 'Tipo no registrado'}
+                            {p.sexo || '—'} · {(!p.grupo_sanguineo || p.grupo_sanguineo === 'Desconocido') ? <span style={{ color: 'var(--text-3)' }}>Tipo desconocido</span> : p.grupo_sanguineo}
                           </p>
                         </div>
                       </div>
@@ -251,7 +252,7 @@ export default function Patients() {
                   <label className="field-label">Grupo sanguíneo</label>
                   <select className="input" value={form.grupo_sanguineo} onChange={e => setValue('grupo_sanguineo', e.target.value)}>
                     <option value="">Seleccionar...</option>
-                    {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g} value={g}>{g}</option>)}
+                    {GRUPOS_SANGUINEOS.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <FormField label="Teléfono" required error={errors.telefono} touched={touched.telefono}>

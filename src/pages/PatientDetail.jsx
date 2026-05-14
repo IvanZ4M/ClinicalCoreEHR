@@ -137,7 +137,10 @@ export default function PatientDetail() {
                   </span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)' }}>{calcularEdad(paciente.fecha_nacimiento)} años</span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)', textTransform: 'capitalize' }}>{paciente.sexo || '—'}</span>
-                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{paciente.grupo_sanguineo || 'Tipo no registrado'}</span>
+                  {paciente.grupo_sanguineo && paciente.grupo_sanguineo !== 'Desconocido'
+                    ? <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{paciente.grupo_sanguineo}</span>
+                    : <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)' }}>Tipo desconocido</span>
+                  }
                 </div>
                 <p className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
                   CURP: {paciente.curp || '—'}

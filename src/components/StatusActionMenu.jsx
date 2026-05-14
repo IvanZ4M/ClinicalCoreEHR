@@ -88,7 +88,7 @@ export default function StatusActionMenu({
         onSuccess?.('en_consulta')
       } catch { /* fail silently, navigate anyway */ }
       cerrar()
-      navigate(`/consulta/nueva?paciente=${pacienteId}`)
+      navigate(`/consulta/nueva?paciente=${pacienteId}&cita=${citaId}`)
       return
     }
 
