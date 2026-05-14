@@ -121,6 +121,7 @@ export default function NewConsultation() {
   const [signosErrors,    setSignosErrors]    = useState({})
   const [signosTouched,   setSignosTouched]   = useState({})
   const [motivoTouched,   setMotivoTouched]   = useState(false)
+  const [motivoError,     setMotivoError]     = useState(null)
 
   const SIGNOS_RULES = {
     presion_arterial:    validators.presionArterial,
@@ -347,8 +348,10 @@ export default function NewConsultation() {
 
   const handleGuardar = async (estadoFinal = 'completada') => {
     setMotivoTouched(true)
-    if (!motivo.trim()) { setError('El motivo de la consulta es obligatorio.'); return }
-    if (!pacienteId)    { setError('No se especificó un paciente.'); return }
+    const mErr = validators.motivoConsulta(motivo)
+    setMotivoError(mErr)
+    if (mErr) return
+    if (!pacienteId) { setError('No se especificó un paciente.'); return }
     if (guardando) return
     // Validate clinical ranges for any vitals that were entered
     const newErrors = {}
@@ -445,12 +448,19 @@ export default function NewConsultation() {
         <Seccion icon={<I.Clipboard width={15} height={15} />} titulo="Motivo de la Consulta">
           <textarea
             value={motivo}
-            onChange={e => setMotivo(e.target.value)}
+            onChange={e => { setMotivo(e.target.value); if (motivoTouched) setMotivoError(validators.motivoConsulta(e.target.value)) }}
+            onBlur={() => { setMotivoTouched(true); setMotivoError(validators.motivoConsulta(motivo)) }}
             placeholder="Describa el motivo principal y la historia del paciente para esta visita..."
             rows={4}
-            className="input"
+            className={`input${motivoTouched && motivoError ? ' input-error' : ''}`}
             style={{ resize: 'none' }}
+            aria-invalid={motivoTouched && motivoError ? 'true' : undefined}
           />
+          {motivoTouched && motivoError && (
+            <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+              <I.Alert width={10} height={10} style={{ flexShrink: 0 }} />{motivoError}
+            </p>
+          )}
         </Seccion>
 
         {/* Signos vitales */}
