@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts'
 import { useColeccion } from '../hooks/usePocketBase'
+import { useAuth } from '../context/AuthContext'
 import { I } from '../components/icons'
 
 const CHART_COLORS = [
@@ -64,16 +65,22 @@ export default function Reports() {
   const [periodo, setPeriodo] = useState('mensual')
   const [fechaInicio, fechaFin] = useMemo(() => obtenerRango(periodo), [periodo])
 
+  const { usuario } = useAuth()
+  const esMedico = usuario?.rol === 'medico'
+  const medicoId = usuario?.id || ''
+  const filtroMedico = esMedico && medicoId ? `medico = "${medicoId}" && ` : ''
+  const filtroDxMedico = esMedico && medicoId ? `consulta.medico = "${medicoId}" && ` : ''
+
   const { datos: pacientes } = useColeccion('pacientes', { filtro: 'activo = true', porPagina: 500 })
   const { datos: consultas } = useColeccion('consultas', {
-    filtro: `estado = "completada" && fecha >= "${fechaInicio}" && fecha <= "${fechaFin}"`,
+    filtro: `${filtroMedico}estado = "completada" && fecha >= "${fechaInicio}" && fecha <= "${fechaFin}"`,
     porPagina: 500, expandir: 'medico,paciente',
   })
   const { datos: diagnosticos } = useColeccion('diagnosticos', {
-    filtro: `created >= "${fechaInicio}" && created <= "${fechaFin}"`, porPagina: 500,
+    filtro: `${filtroDxMedico}created >= "${fechaInicio}" && created <= "${fechaFin}"`, porPagina: 500,
   })
   const { datos: citas } = useColeccion('citas', {
-    filtro: `fecha_hora >= "${fechaInicio}" && fecha_hora <= "${fechaFin}"`, porPagina: 500,
+    filtro: `${filtroMedico}fecha_hora >= "${fechaInicio}" && fecha_hora <= "${fechaFin}"`, porPagina: 500,
   })
 
   const citasCompletadas = citas.filter(c => c.estado === 'completada').length

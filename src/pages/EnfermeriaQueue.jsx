@@ -1,10 +1,18 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useColeccion } from '../hooks/usePocketBase'
 import { saludo } from '../lib/roles'
 import { I } from '../components/icons'
 
-function hoy() { return new Date().toISOString().slice(0, 10) }
+function hoyRango() {
+  const d = new Date()
+  const p = n => String(n).padStart(2, '0')
+  const fmt = dt => `${dt.getUTCFullYear()}-${p(dt.getUTCMonth()+1)}-${p(dt.getUTCDate())} ${p(dt.getUTCHours())}:${p(dt.getUTCMinutes())}:${p(dt.getUTCSeconds())}`
+  const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const fin    = new Date(inicio.getTime() + 86400000 - 1000)
+  return { inicio: fmt(inicio), fin: fmt(fin) }
+}
 
 function formatearHora(fechaISO) {
   if (!fechaISO) return '—'
@@ -29,16 +37,25 @@ export default function EnfermeriaQueue() {
   const navigate    = useNavigate()
   const { usuario } = useAuth()
 
-  const filtroHoy = `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59" && estado = "en_sala"`
+  const { inicio, fin } = hoyRango()
+  const filtroHoy = `fecha_hora >= "${inicio}" && fecha_hora <= "${fin}" && estado = "en_sala"`
 
   const { datos: enSala, cargando, recargar } = useColeccion('citas', {
     filtro: filtroHoy, orden: 'fecha_hora', expandir: 'paciente,medico',
   })
 
   const { datos: triagesHoy } = useColeccion('triage', {
-    filtro: `created >= "${hoy()} 00:00:00" && created <= "${hoy()} 23:59:59"`,
+    filtro: `created >= "${inicio}" && created <= "${fin}"`,
     orden: '-created',
   })
+
+  // Auto-refresh every 30 s — nurses need live updates as patients arrive
+  const recargarRef = useRef(recargar)
+  useEffect(() => { recargarRef.current = recargar })
+  useEffect(() => {
+    const id = setInterval(() => recargarRef.current(), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   const tieneTriageCompletado = (citaId) =>
     triagesHoy.some(t => t.cita_id === citaId && t.estado === 'completado')

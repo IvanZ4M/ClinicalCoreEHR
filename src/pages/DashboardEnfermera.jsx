@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useColeccion } from '../hooks/usePocketBase'
@@ -14,8 +15,13 @@ const ESTADO_COLOR = {
   no_acudio:   { color: 'oklch(52% 0.22 50)', dim: 'oklch(62% 0.18 50 / 0.12)',    label: 'No acudió'   },
 }
 
-function hoy() {
-  return new Date().toISOString().slice(0, 10)
+function hoyRango() {
+  const d = new Date()
+  const p = n => String(n).padStart(2, '0')
+  const fmt = dt => `${dt.getUTCFullYear()}-${p(dt.getUTCMonth()+1)}-${p(dt.getUTCDate())} ${p(dt.getUTCHours())}:${p(dt.getUTCMinutes())}:${p(dt.getUTCSeconds())}`
+  const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const fin    = new Date(inicio.getTime() + 86400000 - 1000)
+  return { inicio: fmt(inicio), fin: fmt(fin) }
 }
 
 function formatearHora(fechaISO) {
@@ -27,10 +33,19 @@ export default function DashboardEnfermera() {
   const navigate       = useNavigate()
   const { usuario }    = useAuth()
 
-  const filtroHoy = `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59"`
+  const { inicio, fin } = hoyRango()
+  const filtroHoy = `fecha_hora >= "${inicio}" && fecha_hora <= "${fin}"`
 
-  const { datos: citasHoy,     cargando: cargCitas }   = useColeccion('citas', { filtro: filtroHoy,                              orden: 'fecha_hora', expandir: 'paciente' })
-  const { datos: citasEnSala,  cargando: cargEnSala }  = useColeccion('citas', { filtro: `${filtroHoy} && estado = "en_sala"`,   orden: 'fecha_hora', expandir: 'paciente' })
+  const { datos: citasHoy,    cargando: cargCitas,  recargar: recargarHoy    } = useColeccion('citas', { filtro: filtroHoy,                             orden: 'fecha_hora', expandir: 'paciente' })
+  const { datos: citasEnSala, cargando: cargEnSala, recargar: recargarEnSala } = useColeccion('citas', { filtro: `${filtroHoy} && estado = "en_sala"`, orden: 'fecha_hora', expandir: 'paciente' })
+
+  // Auto-refresh every 30 s so the nurse sees status changes without manual reload
+  const recargarRef = useRef(recargarEnSala)
+  useEffect(() => { recargarRef.current = recargarEnSala })
+  useEffect(() => {
+    const id = setInterval(() => recargarRef.current(), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   const nombre = usuario?.nombre || 'Enfermera'
 
@@ -47,9 +62,14 @@ export default function DashboardEnfermera() {
             {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={() => navigate('/citas')} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
-          <I.Calendar width={14} height={14} /> Ver todas las citas
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => { recargarHoy(); recargarEnSala() }} className="btn btn-ghost" style={{ fontSize: '0.8125rem' }}>
+            <I.Refresh width={14} height={14} /> Actualizar
+          </button>
+          <button onClick={() => navigate('/citas')} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
+            <I.Calendar width={14} height={14} /> Ver todas las citas
+          </button>
+        </div>
       </div>
 
       {/* ── Estadísticas del día ────────────────────────────────────── */}

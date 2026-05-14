@@ -15,8 +15,13 @@ const ESTADO_COLOR = {
   no_acudio:   { color: 'oklch(52% 0.22 50)', dim: 'oklch(62% 0.18 50 / 0.12)',    label: 'No acudió'   },
 }
 
-function hoy() {
-  return new Date().toISOString().slice(0, 10)
+function hoyRango() {
+  const d = new Date()
+  const p = n => String(n).padStart(2, '0')
+  const fmt = dt => `${dt.getUTCFullYear()}-${p(dt.getUTCMonth()+1)}-${p(dt.getUTCDate())} ${p(dt.getUTCHours())}:${p(dt.getUTCMinutes())}:${p(dt.getUTCSeconds())}`
+  const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const fin    = new Date(inicio.getTime() + 86400000 - 1000)
+  return { inicio: fmt(inicio), fin: fmt(fin) }
 }
 
 function formatearHora(fechaISO) {
@@ -28,7 +33,8 @@ export default function DashboardRecepcionista() {
   const navigate    = useNavigate()
   const { usuario } = useAuth()
 
-  const filtroHoy = `fecha_hora >= "${hoy()} 00:00:00" && fecha_hora <= "${hoy()} 23:59:59"`
+  const { inicio, fin } = hoyRango()
+  const filtroHoy = `fecha_hora >= "${inicio}" && fecha_hora <= "${fin}"`
 
   const { datos: citasHoy, cargando, recargar } = useColeccion('citas', {
     filtro: filtroHoy, orden: 'fecha_hora', expandir: 'paciente,medico',
