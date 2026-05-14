@@ -26,7 +26,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
 
       // VULN-FIX (ÁREA 1): nodeIntegration desactivado — el renderer (React) no
       // tiene acceso a las APIs de Node.js. Sin esto, cualquier script en la
@@ -50,6 +50,18 @@ function createWindow() {
     },
   });
 
+  // Capture renderer errors and console output to the log file
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log.error(`[Renderer] did-fail-load: ${code} ${desc} — ${url}`);
+  });
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    log.error('[Renderer] process gone:', JSON.stringify(details));
+  });
+  mainWindow.webContents.on('console-message', (_e, level, message, line, source) => {
+    const lvl = ['verbose', 'info', 'warn', 'error'][level] ?? 'info';
+    log[lvl === 'verbose' ? 'debug' : lvl](`[Renderer] ${message} (${source}:${line})`);
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
@@ -57,15 +69,10 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 
-    // VULN-FIX (ÁREA 1): en producción, impedir que se abran las DevTools.
-    // Sin esto, cualquier usuario con acceso físico puede inspeccionar tokens
-    // de sesión, datos de pacientes en memoria y peticiones de red.
     mainWindow.webContents.on('devtools-opened', () => {
       mainWindow.webContents.closeDevTools();
     });
 
-    // VULN-FIX (ÁREA 1): deshabilitar "Inspeccionar elemento" en el menú
-    // contextual para que no haya atajo hacia las DevTools.
     mainWindow.webContents.on('context-menu', (e) => e.preventDefault());
 
     log.info('ClinicalCore EHR iniciado — versión', app.getVersion());

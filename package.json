@@ -27,6 +27,7 @@
       "electron/**/*",
       "package.json"
     ],
+    "asar": false,
     "win": {
       "target": [
         {
