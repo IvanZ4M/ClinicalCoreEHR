@@ -6,12 +6,18 @@
  * Respects the app's light/dark mode via design-system CSS variables.
  */
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { I } from '../components/icons'
 import { useLogin } from '../hooks/useLogin'
 import '../styles/login.css'
 
 export default function Login() {
   const [visible, setVisible] = useState(false)
+  const location = useLocation()
+
+  // VULN-FIX (ÁREA 3): detectar si el usuario llegó aquí por inactividad
+  const cierreInactividad = location.state?.reason === 'inactivity'
+
   const {
     email, setEmail, password, setPassword,
     showPassword, setShowPassword,
@@ -36,6 +42,18 @@ export default function Login() {
         <BrandingPanel />
 
         <div className="login-content">
+          {cierreInactividad && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              background: 'var(--warn-dim)', border: '1px solid var(--warn)',
+              borderRadius: 10, padding: '0.625rem 0.875rem',
+              fontSize: '0.8125rem', color: 'var(--warn)', marginBottom: '1.25rem',
+            }}>
+              <I.Lock width={13} height={13} style={{ flexShrink: 0 }} />
+              Tu sesión se cerró automáticamente por inactividad.
+            </div>
+          )}
+
           <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-2)', marginBottom: '1.75rem' }}>
             Ingresa tus credenciales para continuar
           </p>
