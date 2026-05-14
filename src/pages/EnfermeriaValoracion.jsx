@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
+import { validators } from '../lib/validators'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
@@ -46,10 +47,36 @@ export default function EnfermeriaValoracion() {
     orden:   '-created', porPagina: 1,
   })
 
-  const [form,       setForm]       = useState(FORM_VACIO)
-  const [guardando,  setGuardando]  = useState(false)
-  const [error,      setError]      = useState('')
-  const [confirmando, setConfirmando] = useState(false)
+  const [form,         setForm]         = useState(FORM_VACIO)
+  const [signosErrors, setSignosErrors] = useState({})
+  const [signosTouched, setSignosTouched] = useState({})
+  const [guardando,    setGuardando]    = useState(false)
+  const [error,        setError]        = useState('')
+  const [confirmando,  setConfirmando]  = useState(false)
+
+  const SIGNOS_RULES = {
+    presion_arterial:        validators.presionArterial,
+    temperatura:             validators.temperatura,
+    frecuencia_cardiaca:     validators.frecuenciaCardiaca,
+    frecuencia_respiratoria: validators.frecuenciaRespiratoria,
+    saturacion_oxigeno:      validators.saturacionOxigeno,
+    peso:                    validators.peso,
+    talla:                   validators.talla,
+  }
+
+  const handleSignoChange = (field, value) => {
+    setForm(f => ({ ...f, [field]: value }))
+    if (signosTouched[field] && SIGNOS_RULES[field]) {
+      setSignosErrors(e => ({ ...e, [field]: SIGNOS_RULES[field](value) }))
+    }
+  }
+
+  const handleSignoBlur = (field) => {
+    setSignosTouched(t => ({ ...t, [field]: true }))
+    if (SIGNOS_RULES[field]) {
+      setSignosErrors(e => ({ ...e, [field]: SIGNOS_RULES[field](form[field]) }))
+    }
+  }
 
   const paciente  = cita?.expand?.paciente
   const medico    = cita?.expand?.medico
@@ -66,6 +93,19 @@ export default function EnfermeriaValoracion() {
   const handleGuardar = async () => {
     if (campoReq) {
       setError('Completa los campos requeridos: presión arterial, temperatura, frecuencia cardíaca y queja principal.')
+      return
+    }
+    // Validate clinical ranges for all vitals entered
+    const newErrors = {}
+    let hasRangeError = false
+    for (const [field, validator] of Object.entries(SIGNOS_RULES)) {
+      const err = validator(form[field])
+      if (err) { newErrors[field] = err; hasRangeError = true }
+    }
+    if (hasRangeError) {
+      setSignosErrors(newErrors)
+      setSignosTouched(Object.keys(SIGNOS_RULES).reduce((a, k) => ({ ...a, [k]: true }), {}))
+      setError('Corrige los valores fuera de rango antes de continuar.')
       return
     }
     setGuardando(true); setError('')
@@ -242,19 +282,29 @@ export default function EnfermeriaValoracion() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
               <CampoSigno label="Presión Arterial *" value={form.presion_arterial}
-                onChange={v => setForm(f => ({ ...f, presion_arterial: v }))}
+                onChange={v => handleSignoChange('presion_arterial', v)}
+                onBlur={() => handleSignoBlur('presion_arterial')}
+                error={signosErrors.presion_arterial} touched={signosTouched.presion_arterial}
                 placeholder="120/80" unidad="mmHg" />
               <CampoSigno label="Temperatura *" value={form.temperatura}
-                onChange={v => setForm(f => ({ ...f, temperatura: v }))}
+                onChange={v => handleSignoChange('temperatura', v)}
+                onBlur={() => handleSignoBlur('temperatura')}
+                error={signosErrors.temperatura} touched={signosTouched.temperatura}
                 placeholder="36.5" unidad="°C" tipo="number" />
               <CampoSigno label="Frec. Cardíaca *" value={form.frecuencia_cardiaca}
-                onChange={v => setForm(f => ({ ...f, frecuencia_cardiaca: v }))}
+                onChange={v => handleSignoChange('frecuencia_cardiaca', v)}
+                onBlur={() => handleSignoBlur('frecuencia_cardiaca')}
+                error={signosErrors.frecuencia_cardiaca} touched={signosTouched.frecuencia_cardiaca}
                 placeholder="75" unidad="lpm" tipo="number" />
               <CampoSigno label="Frec. Respiratoria" value={form.frecuencia_respiratoria}
-                onChange={v => setForm(f => ({ ...f, frecuencia_respiratoria: v }))}
+                onChange={v => handleSignoChange('frecuencia_respiratoria', v)}
+                onBlur={() => handleSignoBlur('frecuencia_respiratoria')}
+                error={signosErrors.frecuencia_respiratoria} touched={signosTouched.frecuencia_respiratoria}
                 placeholder="16" unidad="rpm" tipo="number" />
               <CampoSigno label="SpO₂" value={form.saturacion_oxigeno}
-                onChange={v => setForm(f => ({ ...f, saturacion_oxigeno: v }))}
+                onChange={v => handleSignoChange('saturacion_oxigeno', v)}
+                onBlur={() => handleSignoBlur('saturacion_oxigeno')}
+                error={signosErrors.saturacion_oxigeno} touched={signosTouched.saturacion_oxigeno}
                 placeholder="98" unidad="%" tipo="number" />
             </div>
           </div>
@@ -267,10 +317,14 @@ export default function EnfermeriaValoracion() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <CampoSigno label="Peso" value={form.peso}
-                onChange={v => setForm(f => ({ ...f, peso: v }))}
+                onChange={v => handleSignoChange('peso', v)}
+                onBlur={() => handleSignoBlur('peso')}
+                error={signosErrors.peso} touched={signosTouched.peso}
                 placeholder="70" unidad="kg" tipo="number" />
               <CampoSigno label="Talla" value={form.talla}
-                onChange={v => setForm(f => ({ ...f, talla: v }))}
+                onChange={v => handleSignoChange('talla', v)}
+                onBlur={() => handleSignoBlur('talla')}
+                error={signosErrors.talla} touched={signosTouched.talla}
                 placeholder="170" unidad="cm" tipo="number" />
               {/* IMC */}
               <div style={{
@@ -395,7 +449,8 @@ export default function EnfermeriaValoracion() {
   )
 }
 
-function CampoSigno({ label, value, onChange, placeholder, unidad, tipo = 'text' }) {
+function CampoSigno({ label, value, onChange, onBlur, placeholder, unidad, tipo = 'text', error, touched }) {
+  const showError = !!(touched && error)
   return (
     <div>
       <label className="field-label">{label}</label>
@@ -404,10 +459,12 @@ function CampoSigno({ label, value, onChange, placeholder, unidad, tipo = 'text'
           type={tipo}
           value={value}
           onChange={e => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
-          className="input"
+          className={`input${showError ? ' input-error' : ''}`}
           inputMode={tipo === 'number' ? 'decimal' : 'text'}
           style={{ paddingRight: unidad ? '3rem' : undefined }}
+          aria-invalid={showError ? 'true' : undefined}
         />
         {unidad && (
           <span style={{
@@ -418,6 +475,11 @@ function CampoSigno({ label, value, onChange, placeholder, unidad, tipo = 'text'
           </span>
         )}
       </div>
+      {showError && (
+        <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.125rem' }}>
+          <I.Alert width={10} height={10} style={{ flexShrink: 0 }} />{error}
+        </p>
+      )}
     </div>
   )
 }

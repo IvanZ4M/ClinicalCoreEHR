@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
 import { PATIENT_TABS_POR_ROL } from '../lib/roles'
 import pb from '../lib/pb'
+import { logAuditEvent } from '../services/auditService'
 import { I } from '../components/icons'
 import ConsultasPrevias from '../components/ConsultasPrevias'
 
@@ -34,6 +35,13 @@ export default function PatientDetail() {
   const navigate = useNavigate()
   const { usuario } = useAuth()
 
+  // VULN-FIX (ÁREA 7): rechazar IDs con formato inválido para evitar consultas basura o enumeración
+  useEffect(() => {
+    if (!id || !/^[a-z0-9]{15}$/.test(id)) {
+      navigate('/pacientes', { replace: true })
+    }
+  }, [id, navigate])
+
   const tabsPermitidos = PATIENT_TABS_POR_ROL[usuario?.rol] ?? TABS_TODOS
 
   const [tabActiva, setTabActiva]           = useState('Datos Personales')
@@ -42,6 +50,13 @@ export default function PatientDetail() {
   const [guardando, setGuardando]           = useState(false)
 
   const { dato: paciente, cargando, error, recargar: recargarPaciente } = useRegistro('pacientes', id)
+
+  // VULN-FIX (ÁREA 7): registrar acceso al expediente en audit_log
+  useEffect(() => {
+    if (paciente?.id) {
+      logAuditEvent('VER_EXPEDIENTE', 'pacientes', paciente.id)
+    }
+  }, [paciente?.id])
 
   const { datos: consultas } = useColeccion('consultas', {
     filtro: `paciente = "${id}"`, orden: '-fecha', expandir: 'medico',

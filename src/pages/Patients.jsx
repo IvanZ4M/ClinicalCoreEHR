@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useColeccion } from '../hooks/usePocketBase'
+import { useForm } from '../hooks/useForm'
+import { validators } from '../lib/validators'
+import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
+import { sanitizePatientData } from '../lib/sanitize'
 import { I } from '../components/icons'
 
 function calcularEdad(fechaNacimiento) {
@@ -26,13 +30,23 @@ const FORM_EMPTY = {
   alergias_criticas: false, activo: true,
 }
 
+const REGLAS_PACIENTE = {
+  nombre:           validators.nombre,
+  apellidos:        validators.apellido,
+  curp:             validators.curp,
+  fecha_nacimiento: validators.fechaNacimiento,
+  telefono:         validators.telefonoRequired,
+  email:            validators.email,
+}
+
 export default function Patients() {
   const [busqueda,     setBusqueda]     = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
   const [guardando,    setGuardando]    = useState(false)
   const [errorForm,    setErrorForm]    = useState('')
-  const [form,         setForm]         = useState(FORM_EMPTY)
   const navigate = useNavigate()
+
+  const { values: form, errors, touched, setValue, handleBlur, validateAll, reset: resetForm } = useForm(FORM_EMPTY, REGLAS_PACIENTE)
 
   const filtro = busqueda.trim()
     ? `nombre ~ "${busqueda}" || apellidos ~ "${busqueda}" || curp ~ "${busqueda}" || email ~ "${busqueda}"`
@@ -41,16 +55,14 @@ export default function Patients() {
   const { datos: pacientes, cargando, recargar } = useColeccion('pacientes', { filtro, orden: 'nombre' })
 
   const handleGuardar = async () => {
-    if (!form.nombre || !form.apellidos || !form.curp) {
-      setErrorForm('Nombre, apellidos y CURP son obligatorios.')
-      return
-    }
+    if (!validateAll()) return
     setGuardando(true)
     setErrorForm('')
     try {
-      await pb.collection('pacientes').create(form)
+      // VULN-FIX (ÁREA 4): sanitizar datos antes de enviar a PocketBase
+      await pb.collection('pacientes').create(sanitizePatientData(form))
       setModalAbierto(false)
-      setForm(FORM_EMPTY)
+      resetForm()
       recargar()
     } catch (err) {
       setErrorForm('Error al guardar: ' + err.message)
@@ -59,7 +71,7 @@ export default function Patients() {
     }
   }
 
-  const cerrarModal = () => { setModalAbierto(false); setErrorForm('') }
+  const cerrarModal = () => { setModalAbierto(false); setErrorForm(''); resetForm() }
 
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="anim-fade">
@@ -202,26 +214,62 @@ export default function Patients() {
             {/* Body */}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <CampoInput label="Nombre(s) *" value={form.nombre} onChange={v => setForm({ ...form, nombre: v })} />
-                <CampoInput label="Apellidos *"  value={form.apellidos} onChange={v => setForm({ ...form, apellidos: v })} />
+                <FormField label="Nombre(s)" required error={errors.nombre} touched={touched.nombre}>
+                  <input className="input" type="text" value={form.nombre}
+                    onChange={e => setValue('nombre', e.target.value)}
+                    onBlur={() => handleBlur('nombre')} />
+                </FormField>
+                <FormField label="Apellidos" required error={errors.apellidos} touched={touched.apellidos}>
+                  <input className="input" type="text" value={form.apellidos}
+                    onChange={e => setValue('apellidos', e.target.value)}
+                    onBlur={() => handleBlur('apellidos')} />
+                </FormField>
               </div>
-              <CampoInput label="CURP *" value={form.curp} onChange={v => setForm({ ...form, curp: v.toUpperCase() })} placeholder="ZAMD000101HCOMNR00" />
+              <FormField label="CURP" required error={errors.curp} touched={touched.curp}>
+                <input className="input" type="text" value={form.curp} placeholder="ZAMD000101HCOMNR00"
+                  onChange={e => setValue('curp', e.target.value.toUpperCase())}
+                  onBlur={() => handleBlur('curp')} />
+              </FormField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <CampoInput label="Fecha de nacimiento" type="date" value={form.fecha_nacimiento} onChange={v => setForm({ ...form, fecha_nacimiento: v })} />
-                <CampoSelect label="Sexo" value={form.sexo} onChange={v => setForm({ ...form, sexo: v })}
-                  opciones={[{ v: 'masculino', l: 'Masculino' }, { v: 'femenino', l: 'Femenino' }, { v: 'otro', l: 'Otro' }]} />
+                <FormField label="Fecha de nacimiento" required error={errors.fecha_nacimiento} touched={touched.fecha_nacimiento}>
+                  <input className="input" type="date" value={form.fecha_nacimiento}
+                    onChange={e => setValue('fecha_nacimiento', e.target.value)}
+                    onBlur={() => handleBlur('fecha_nacimiento')} />
+                </FormField>
+                <div>
+                  <label className="field-label">Sexo</label>
+                  <select className="input" value={form.sexo} onChange={e => setValue('sexo', e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="femenino">Femenino</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <CampoSelect label="Grupo sanguíneo" value={form.grupo_sanguineo} onChange={v => setForm({ ...form, grupo_sanguineo: v })}
-                  opciones={['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => ({ v: g, l: g }))} />
-                <CampoInput label="Teléfono" value={form.telefono} onChange={v => setForm({ ...form, telefono: v })} placeholder="871 000 0000" />
+                <div>
+                  <label className="field-label">Grupo sanguíneo</label>
+                  <select className="input" value={form.grupo_sanguineo} onChange={e => setValue('grupo_sanguineo', e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <FormField label="Teléfono" required error={errors.telefono} touched={touched.telefono}>
+                  <input className="input" type="text" value={form.telefono} placeholder="871 000 0000"
+                    onChange={e => setValue('telefono', e.target.value)}
+                    onBlur={() => handleBlur('telefono')} />
+                </FormField>
               </div>
-              <CampoInput label="Correo electrónico" type="email" value={form.email} onChange={v => setForm({ ...form, email: v })} />
+              <FormField label="Correo electrónico" error={errors.email} touched={touched.email}>
+                <input className="input" type="email" value={form.email}
+                  onChange={e => setValue('email', e.target.value)}
+                  onBlur={() => handleBlur('email')} />
+              </FormField>
               <div>
                 <label className="field-label">Alergias conocidas</label>
                 <textarea
                   value={form.alergias}
-                  onChange={e => setForm({ ...form, alergias: e.target.value })}
+                  onChange={e => setValue('alergias', e.target.value)}
                   placeholder="Ej: Penicilina, Látex, Cacahuates..."
                   rows={2}
                   className="input"
@@ -232,7 +280,7 @@ export default function Patients() {
                 <input
                   type="checkbox"
                   checked={form.alergias_criticas}
-                  onChange={e => setForm({ ...form, alergias_criticas: e.target.checked })}
+                  onChange={e => setValue('alergias_criticas', e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: 'var(--danger)' }}
                 />
                 <I.Shield width={13} height={13} style={{ color: 'var(--danger)', flexShrink: 0 }} />
@@ -261,23 +309,3 @@ export default function Patients() {
   )
 }
 
-function CampoInput({ label, value, onChange, type = 'text', placeholder = '' }) {
-  return (
-    <div>
-      <label className="field-label">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input" />
-    </div>
-  )
-}
-
-function CampoSelect({ label, value, onChange, opciones }) {
-  return (
-    <div>
-      <label className="field-label">{label}</label>
-      <select value={value} onChange={e => onChange(e.target.value)} className="input">
-        <option value="">Seleccionar...</option>
-        {opciones.map(op => <option key={op.v} value={op.v}>{op.l}</option>)}
-      </select>
-    </div>
-  )
-}
