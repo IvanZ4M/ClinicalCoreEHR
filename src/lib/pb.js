@@ -29,8 +29,8 @@ pb.authStore.onChange((token, record) => {
     localStorage.setItem('pb_auth', JSON.stringify({ token, record }))
   } else {
     localStorage.removeItem('pb_auth')
-    if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
-      window.location.href = '/login'
+    if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
+      window.location.hash = '#/login'
     }
   }
 })
