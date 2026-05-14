@@ -2,6 +2,8 @@
   "name": "clinical-core-ehr",
   "private": true,
   "version": "1.0.0",
+  "description": "Sistema de historia clínica electrónica para consultorios médicos",
+  "author": "Ivan Zamarrón <zamaescobedo@gmail.com>",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -32,7 +34,7 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "resources/icon.ico"
+      "icon": "resources/logo-medico.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -40,7 +42,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ClinicalCore EHR",
-      "installerHeaderIcon": "resources/icon.ico"
+      "installerHeaderIcon": "resources/logo-medico.ico"
     }
   },
   "dependencies": {
