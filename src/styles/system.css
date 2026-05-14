@@ -191,6 +191,13 @@ body {
   cursor: not-allowed;
   background: var(--bg-subtle);
 }
+.input.input-error {
+  border-color: var(--danger);
+}
+.input.input-error:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--danger) 15%, transparent);
+}
 
 /* ─── Component: .btn ─────────────────────────────────────────────────────── */
 .btn {
