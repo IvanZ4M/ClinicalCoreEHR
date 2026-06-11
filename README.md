@@ -100,4 +100,3 @@ Al ejecutar por primera vez, PocketBase aplica automáticamente las migraciones 
 
 **Diego Iván Zamarrón Escobedo**  
 Proyecto de Titulación — Ingeniería en Sistemas Computacionales  
-Universidad Autónoma de la Laguna · Mayo 2026
