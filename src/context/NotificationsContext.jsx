@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import pb from '../lib/pb'
 import { useAuth } from './AuthContext'
+import { logError, logWarn } from '../lib/logger'
 
 const Ctx = createContext({
   notificaciones: [],
@@ -18,12 +19,13 @@ export function NotificationsProvider({ children }) {
     if (!usuario?.id) return
     try {
       const r = await pb.collection('notificaciones').getList(1, 50, {
-        filter: `usuario_destino = "${usuario.id}"`,
+        filter: pb.filter('usuario_destino = {:uid}', { uid: usuario.id }),
         sort: '-created',
       })
       setNotificaciones(r.items)
-    } catch {
-      // collection may not exist yet — fail silently
+    } catch (err) {
+      // La colección puede no existir todavía en instalaciones antiguas.
+      logWarn('NotificationsContext.cargar', err)
     }
   }, [usuario?.id])
 
@@ -34,7 +36,8 @@ export function NotificationsProvider({ children }) {
     if (!usuario?.id) return
     pb.collection('notificaciones').subscribe('*', (e) => {
       if (e.record.usuario_destino === usuario.id) cargar()
-    }).then(fn => { unsubRef.current = fn }).catch(() => {})
+    }).then(fn => { unsubRef.current = fn })
+      .catch(err => logWarn('NotificationsContext.subscribe', err))
 
     return () => { unsubRef.current?.(); unsubRef.current = null }
   }, [usuario?.id, cargar])
@@ -43,13 +46,16 @@ export function NotificationsProvider({ children }) {
     try {
       await pb.collection('notificaciones').update(id, { leida: true })
       setNotificaciones(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n))
-    } catch { /* fail silently */ }
+    } catch (err) {
+      logError('NotificationsContext.marcarLeida', err)
+    }
   }, [])
 
   const marcarTodasLeidas = useCallback(async () => {
     const pendientes = notificaciones.filter(n => !n.leida)
     await Promise.all(pendientes.map(n =>
-      pb.collection('notificaciones').update(n.id, { leida: true }).catch(() => {})
+      pb.collection('notificaciones').update(n.id, { leida: true })
+        .catch(err => logError('NotificationsContext.marcarTodasLeidas', err))
     ))
     setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })))
   }, [notificaciones])

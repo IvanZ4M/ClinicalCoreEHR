@@ -5,6 +5,12 @@ export function useColeccion(coleccion, opciones = {}) {
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  // VULN-FIX (ÁREA 9): antes el hook solo devolvía los items de la primera
+  // página y nadie sabía cuántos registros había en total. Con el tope de 200
+  // por defecto, el paciente 201 simplemente no existía para la aplicación y
+  // los informes calculaban sobre datos truncados sin avisar.
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
 
   // Convertimos opciones a string para evitar re-renders infinitos
   const filtro = opciones.filtro || ''
@@ -28,9 +34,23 @@ export function useColeccion(coleccion, opciones = {}) {
           filter: filtro,
           expand: expandir,
         })
-        if (!cancelado) setDatos(resultado.items)
+        if (!cancelado) {
+          setDatos(resultado.items)
+          setTotalItems(resultado.totalItems)
+          setTotalPaginas(resultado.totalPages)
+        }
       } catch (err) {
-        if (!cancelado) setError(err.message)
+        // VULN-FIX (ÁREA 9): al fallar hay que LIMPIAR los datos previos.
+        // Antes se conservaban, así que una búsqueda inválida mostraba el
+        // resultado anterior como si coincidiera con lo que el usuario escribió.
+        if (!cancelado) {
+          setDatos([])
+          setTotalItems(0)
+          setTotalPaginas(1)
+          setError(err?.data?.message || err?.message || 'Error al cargar los datos')
+          // El proceso principal de Electron captura la consola y la escribe al log.
+          console.error(`[useColeccion:${coleccion}]`, err)
+        }
       } finally {
         if (!cancelado) setCargando(false)
       }
@@ -46,7 +66,12 @@ export function useColeccion(coleccion, opciones = {}) {
     if (recargarRef.current) recargarRef.current()
   }
 
-  return { datos, cargando, error, recargar }
+  // `truncado` avisa a quien consuma el hook de que está viendo una porción:
+  // sirve tanto para paginar (Pacientes) como para advertir que una cifra
+  // agregada podría estar incompleta (Informes).
+  const truncado = totalItems > datos.length
+
+  return { datos, cargando, error, recargar, totalItems, totalPaginas, pagina, truncado }
 }
 
 export function useRegistro(coleccion, id, expandir = '') {

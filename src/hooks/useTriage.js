@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import pb from '../lib/pb'
+import { logWarn } from '../lib/logger'
 
+// VULN-FIX (ÁREA 9): PocketBase almacena `created` en UTC. Antes esta función
+// devolvía la medianoche LOCAL como texto plano, que al compararse se
+// interpretaba como UTC: con UTC-6 se colaban las últimas 6 horas del día
+// anterior y un triage de ayer por la tarde aparecía como el de hoy, con los
+// signos vitales de ayer etiquetados "Registrado por Enfermería".
+// Ahora se convierte explícitamente la medianoche local a UTC.
 function hoyInicio() {
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} 00:00:00`
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString().replace('T', ' ').slice(0, 19)
 }
 
 // Most recent completed triage for a patient today
@@ -17,12 +25,16 @@ export function useTriagePaciente(pacienteId) {
     let cancelado = false
     setCargando(true)
     pb.collection('triage').getList(1, 1, {
-      filter:  `paciente_id = "${pacienteId}" && estado = "completado" && created >= "${hoyInicio()}"`,
+      // VULN-FIX (ÁREA 9): pacienteId llega de la URL (?paciente=), así que se
+      // enlaza como parámetro en lugar de interpolarse en el filtro.
+      filter:  pb.filter('paciente_id = {:pid} && estado = "completado" && created >= {:desde}',
+                         { pid: pacienteId, desde: hoyInicio() }),
       sort:    '-created',
       expand:  'enfermera_id',
     }).then(r => {
       if (!cancelado) setTriage(r.items[0] ?? null)
-    }).catch(() => {
+    }).catch(err => {
+      logWarn('useTriagePaciente', err)
       if (!cancelado) setTriage(null)
     }).finally(() => {
       if (!cancelado) setCargando(false)
@@ -43,12 +55,13 @@ export function useTriageCita(citaId) {
     let cancelado = false
     setCargando(true)
     pb.collection('triage').getList(1, 1, {
-      filter:  `cita_id = "${citaId}"`,
+      filter:  pb.filter('cita_id = {:cid}', { cid: citaId }),
       sort:    '-created',
       expand:  'enfermera_id,paciente_id',
     }).then(r => {
       if (!cancelado) setTriage(r.items[0] ?? null)
-    }).catch(() => {
+    }).catch(err => {
+      logWarn('useTriageCita', err)
       if (!cancelado) setTriage(null)
     }).finally(() => {
       if (!cancelado) setCargando(false)
@@ -69,7 +82,8 @@ export function useTriageRealtime(onNuevo) {
     let unsub = null
     pb.collection('triage').subscribe('*', (e) => {
       if (e.action === 'create') cbRef.current(e.record)
-    }).then(fn => { unsub = fn }).catch(() => {})
+    }).then(fn => { unsub = fn })
+      .catch(err => logWarn('useTriageRealtime.subscribe', err))
     return () => { unsub?.() }
   }, [])
 }
