@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useColeccion } from '../hooks/usePocketBase'
 import { useForm } from '../hooks/useForm'
 import { validators } from '../lib/validators'
 import { GRUPOS_SANGUINEOS } from '../lib/medicalConstants'
+import { formatearEdad } from '../lib/edad'
 import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { sanitizePatientData } from '../lib/sanitize'
@@ -42,6 +43,7 @@ const REGLAS_PACIENTE = {
 
 export default function Patients() {
   const [busqueda,     setBusqueda]     = useState('')
+  const [pagina,       setPagina]       = useState(1)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [guardando,    setGuardando]    = useState(false)
   const [errorForm,    setErrorForm]    = useState('')
@@ -49,11 +51,22 @@ export default function Patients() {
 
   const { values: form, errors, touched, setValue, handleBlur, validateAll, reset: resetForm } = useForm(FORM_EMPTY, REGLAS_PACIENTE)
 
-  const filtro = busqueda.trim()
-    ? `nombre ~ "${busqueda}" || apellidos ~ "${busqueda}" || curp ~ "${busqueda}" || email ~ "${busqueda}"`
+  // VULN-FIX (ÁREA 9): pb.filter() enlaza el término como parámetro en lugar de
+  // interpolarlo en el texto del filtro. Antes, teclear una comilla doble
+  // producía un filtro malformado (HTTP 400) y la lista quedaba con los
+  // resultados anteriores, sin aviso alguno para el usuario.
+  const q = busqueda.trim()
+  const filtro = q
+    ? pb.filter('nombre ~ {:q} || apellidos ~ {:q} || curp ~ {:q} || email ~ {:q}', { q })
     : 'activo = true'
 
-  const { datos: pacientes, cargando, recargar } = useColeccion('pacientes', { filtro, orden: 'nombre' })
+  const POR_PAGINA = 25
+  const { datos: pacientes, cargando, error, recargar, totalItems, totalPaginas } =
+    useColeccion('pacientes', { filtro, orden: 'nombre', pagina, porPagina: POR_PAGINA })
+
+  // Al cambiar la búsqueda hay que volver a la primera página: si estabas en la
+  // 3 y el nuevo término solo tiene una, la lista aparecería vacía.
+  useEffect(() => { setPagina(1) }, [filtro])
 
   const handleGuardar = async () => {
     if (!validateAll()) return
@@ -80,14 +93,15 @@ export default function Patients() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             Pacientes
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-            {pacientes.length} paciente{pacientes.length !== 1 ? 's' : ''} registrado{pacientes.length !== 1 ? 's' : ''}
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+            {totalItems} paciente{totalItems !== 1 ? 's' : ''} {busqueda.trim() ? 'encontrado' : 'registrado'}{totalItems !== 1 ? 's' : ''}
+            {totalPaginas > 1 && ` · mostrando ${pacientes.length} en la página ${pagina} de ${totalPaginas}`}
           </p>
         </div>
-        <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+        <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
           <I.Plus width={14} height={14} />
           Nuevo Paciente
         </button>
@@ -108,29 +122,40 @@ export default function Patients() {
 
       {/* ── Table ──────────────────────────────────────────────────── */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        {cargando ? (
+        {error ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', gap: '0.75rem', textAlign: 'center' }}>
+            <I.Alert width={32} height={32} style={{ color: 'var(--danger)', opacity: 0.8 }} />
+            <p style={{ fontSize: 'var(--fs-3)', fontWeight: 600, color: 'var(--text)' }}>
+              No se pudo cargar la lista de pacientes
+            </p>
+            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', maxWidth: 420 }}>{error}</p>
+            <button onClick={recargar} className="btn btn-outline" style={{ marginTop: '0.25rem' }}>
+              Reintentar
+            </button>
+          </div>
+        ) : cargando ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
             <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', marginBottom: '0.75rem' }} className="anim-spin" />
-            <p style={{ fontSize: '0.875rem' }}>Cargando pacientes...</p>
+            <p style={{ fontSize: 'var(--fs-2)' }}>Cargando pacientes...</p>
           </div>
         ) : pacientes.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
             <I.Patients width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.35 }} />
-            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>
+            <p style={{ fontSize: 'var(--fs-2)', fontWeight: 500, color: 'var(--text-2)' }}>
               {busqueda ? 'No se encontraron resultados' : 'Aún no hay pacientes registrados'}
             </p>
             {!busqueda && (
-              <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ marginTop: '1rem', fontSize: '0.8125rem' }}>
+              <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ marginTop: '1rem', fontSize: 'var(--fs-2)' }}>
                 Registrar primer paciente
               </button>
             )}
           </div>
         ) : (
-          <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', fontSize: 'var(--fs-2)', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Paciente', 'CURP', 'Edad', 'Contacto', 'Alergias', 'Registro', ''].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     {h}
                   </th>
                 ))}
@@ -143,26 +168,26 @@ export default function Patients() {
                   <tr key={p.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.75rem' }}>
+                        <div className="avatar" style={{ width: 36, height: 36, fontSize: 'var(--fs-1)' }}>
                           {initials}
                         </div>
                         <div>
                           <p style={{ fontWeight: 600, color: 'var(--text)' }}>{p.nombre} {p.apellidos}</p>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
+                          <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
                             {p.sexo || '—'} · {(!p.grupo_sanguineo || p.grupo_sanguineo === 'Desconocido') ? <span style={{ color: 'var(--text-3)' }}>Tipo desconocido</span> : p.grupo_sanguineo}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: 'var(--text-2)' }}>
+                    <td style={{ padding: '0.875rem 1.25rem', fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>
                       {p.curp || '—'}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)' }}>
-                      {calcularEdad(p.fecha_nacimiento)} años
+                      {formatearEdad(p.fecha_nacimiento)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       <p style={{ color: 'var(--text-2)' }}>{p.telefono || '—'}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{p.email || ''}</p>
+                      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{p.email || ''}</p>
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       {p.alergias_criticas ? (
@@ -172,16 +197,16 @@ export default function Patients() {
                       ) : p.alergias ? (
                         <span className="badge badge-warn">Con alergias</span>
                       ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>Ninguna</span>
+                        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>Ninguna</span>
                       )}
                     </td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                       {formatearFecha(p.created)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       <button
                         onClick={() => navigate(`/pacientes/${p.id}`)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                       >
                         Ver expediente <I.ChevronRight width={12} height={12} />
                       </button>
@@ -194,6 +219,34 @@ export default function Patients() {
         )}
       </div>
 
+      {/* ── Paginación ─────────────────────────────────────────────────
+          Antes la lista se cortaba en 200 sin decirlo: el paciente 201 no
+          existía para la aplicación y el buscador tampoco lo encontraba. */}
+      {totalPaginas > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setPagina(p => Math.max(1, p - 1))}
+            disabled={pagina <= 1}
+            className="btn btn-outline"
+          >
+            <I.ArrowLeft width={14} height={14} /> Anterior
+          </button>
+
+          <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)' }}>
+            Página <strong style={{ color: 'var(--text)' }}>{pagina}</strong> de {totalPaginas}
+            <span style={{ color: 'var(--text-3)' }}> · {totalItems} en total</span>
+          </span>
+
+          <button
+            onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+            disabled={pagina >= totalPaginas}
+            className="btn btn-outline"
+          >
+            Siguiente <I.ChevronRight width={14} height={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Modal: Nuevo Paciente ───────────────────────────────────── */}
       {modalAbierto && (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
@@ -205,7 +258,7 @@ export default function Patients() {
                 <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <I.Patients width={14} height={14} style={{ color: 'var(--accent)' }} />
                 </div>
-                <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>Registrar Nuevo Paciente</h2>
+                <h2 style={{ fontWeight: 700, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Registrar Nuevo Paciente</h2>
               </div>
               <button onClick={cerrarModal} className="btn btn-ghost btn-icon">
                 <I.X width={16} height={16} />
@@ -277,7 +330,7 @@ export default function Patients() {
                   style={{ resize: 'none' }}
                 />
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: 'var(--fs-2)', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
                 <input
                   type="checkbox"
                   checked={form.alergias_criticas}
@@ -289,7 +342,7 @@ export default function Patients() {
               </label>
 
               {errorForm && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
                   <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
                   {errorForm}
                 </div>
@@ -298,8 +351,8 @@ export default function Patients() {
 
             {/* Footer */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-              <button onClick={cerrarModal} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
-              <button onClick={handleGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+              <button onClick={cerrarModal} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>Cancelar</button>
+              <button onClick={handleGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
                 {guardando ? 'Guardando...' : 'Guardar Paciente'}
               </button>
             </div>

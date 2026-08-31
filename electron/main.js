@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import log from 'electron-log/main.js';
@@ -60,6 +60,19 @@ function createWindow() {
   mainWindow.webContents.on('console-message', (_e, level, message, line, source) => {
     const lvl = ['verbose', 'info', 'warn', 'error'][level] ?? 'info';
     log[lvl === 'verbose' ? 'debug' : lvl](`[Renderer] ${message} (${source}:${line})`);
+  });
+
+  // Modo presentación: el renderer pide un factor de zoom. Se valida el rango
+  // antes de aplicarlo — nunca se confía en el valor que llega por IPC.
+  ipcMain.removeAllListeners('ui:set-zoom');
+  ipcMain.on('ui:set-zoom', (_event, factor) => {
+    const f = Number(factor);
+    if (!Number.isFinite(f) || f < 0.5 || f > 3) {
+      log.warn(`[IPC] factor de zoom fuera de rango, ignorado: ${factor}`);
+      return;
+    }
+    mainWindow?.webContents.setZoomFactor(f);
+    log.info(`[IPC] zoom del renderer ajustado a ${f}`);
   });
 
   if (isDev) {

@@ -16,7 +16,7 @@ function SlotSelector({ slots, horaSeleccionada, onHora, cargando, error }) {
 
   if (error) {
     return (
-      <p style={{ fontSize: '0.75rem', color: 'var(--danger)', padding: '0.5rem 0' }}>
+      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', padding: '0.5rem 0' }}>
         Error al cargar horarios. Intenta de nuevo.
       </p>
     )
@@ -24,7 +24,7 @@ function SlotSelector({ slots, horaSeleccionada, onHora, cargando, error }) {
 
   if (!slots || slots.length === 0) {
     return (
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', padding: '0.5rem 0' }}>
+      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', padding: '0.5rem 0' }}>
         Sin horarios disponibles para este día.
       </p>
     )
@@ -55,7 +55,7 @@ function SlotSelector({ slots, horaSeleccionada, onHora, cargando, error }) {
                 : !disponible
                 ? 'var(--text-3)'
                 : 'var(--text)',
-              fontSize: '0.75rem',
+              fontSize: 'var(--fs-1)',
               fontWeight: seleccionado ? 700 : 500,
               cursor: disponible ? 'pointer' : 'not-allowed',
               opacity: !disponible ? 0.5 : 1,

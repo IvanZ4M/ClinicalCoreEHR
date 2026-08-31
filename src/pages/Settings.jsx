@@ -164,10 +164,10 @@ export default function Settings() {
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div>
-        <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
           Configuración
         </h1>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>
           Personaliza el sistema y administra tu cuenta
         </p>
       </div>
@@ -208,7 +208,7 @@ export default function Settings() {
                       transition: 'all 0.15s',
                     }}>
                     {opt.icon}
-                    <span style={{ fontSize: '0.75rem', fontWeight: theme === opt.v ? 600 : 400 }}>{opt.label}</span>
+                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: theme === opt.v ? 600 : 400 }}>{opt.label}</span>
                   </button>
                 ))}
               </div>
@@ -270,10 +270,10 @@ export default function Settings() {
                       transition: 'background 0.15s',
                     }} />
                     <div>
-                      <p style={{ fontSize: '0.8125rem', fontWeight: density === opt.v ? 600 : 400, color: density === opt.v ? 'var(--accent)' : 'var(--text)' }}>
+                      <p style={{ fontSize: 'var(--fs-2)', fontWeight: density === opt.v ? 600 : 400, color: density === opt.v ? 'var(--accent)' : 'var(--text)' }}>
                         {opt.label}
                       </p>
-                      <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 1 }}>{opt.desc}</p>
+                      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 1 }}>{opt.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -304,7 +304,7 @@ export default function Settings() {
                       borderRadius: opt.preview,
                       transition: 'background 0.15s',
                     }} />
-                    <span style={{ fontSize: '0.8125rem', fontWeight: radius === opt.v ? 600 : 400, color: radius === opt.v ? 'var(--accent)' : 'var(--text)' }}>
+                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: radius === opt.v ? 600 : 400, color: radius === opt.v ? 'var(--accent)' : 'var(--text)' }}>
                       {opt.label}
                     </span>
                   </button>
@@ -336,7 +336,7 @@ export default function Settings() {
                         {[1,2,3].map(i => <div key={i} style={{ height: 4, background: 'var(--border)', borderRadius: 2 }} />)}
                       </div>
                     </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: sidebar === opt.v ? 600 : 400, color: sidebar === opt.v ? 'var(--accent)' : 'var(--text-2)' }}>
+                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: sidebar === opt.v ? 600 : 400, color: sidebar === opt.v ? 'var(--accent)' : 'var(--text-2)' }}>
                       {opt.label}
                     </span>
                   </button>
@@ -346,7 +346,7 @@ export default function Settings() {
           </div>
 
           {/* Live preview note */}
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '0 1rem' }}>
+          <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '0 1rem' }}>
             Los cambios se aplican en tiempo real y se guardan automáticamente en este dispositivo.
           </p>
         </div>
@@ -358,19 +358,19 @@ export default function Settings() {
 
           {/* Preview card */}
           <div style={{ background: 'var(--accent-dim)', border: '1px solid color-mix(in oklch, var(--accent) 30%, transparent)', borderRadius: 'var(--radius-lg)', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.125rem', borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: '#fff', flexShrink: 0 }}>
+            <div className="avatar" style={{ width: 56, height: 56, fontSize: 'var(--fs-4)', borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: '#fff', flexShrink: 0 }}>
               {consultorio.nombre
                 ? consultorio.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
                 : 'CM'}
             </div>
             <div>
-              <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.875rem' }}>
+              <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: 'var(--fs-2)' }}>
                 {consultorio.nombre || 'Nombre del Consultorio'}
               </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', marginTop: 2 }}>
+              <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', marginTop: 2 }}>
                 {consultorio.especialidades || 'Especialidades médicas'}
               </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 1 }}>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 1 }}>
                 {consultorio.direccion || 'Dirección del consultorio'}
               </p>
             </div>
@@ -380,7 +380,7 @@ export default function Settings() {
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
               <I.Settings width={15} height={15} style={{ color: 'var(--text-3)' }} />
-              <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Datos del Consultorio</h2>
+              <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Datos del Consultorio</h2>
             </div>
 
             <Campo label="Nombre del consultorio" value={consultorio.nombre}
@@ -407,7 +407,7 @@ export default function Settings() {
             <MensajeEstado msg={mensajeConsultorio} okText="Configuración guardada correctamente" />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
-              <button onClick={handleGuardarConsultorio} disabled={guardandoConsultorio} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+              <button onClick={handleGuardarConsultorio} disabled={guardandoConsultorio} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
                 {guardandoConsultorio ? 'Guardando...' : 'Guardar Configuración'}
               </button>
             </div>
@@ -415,7 +415,7 @@ export default function Settings() {
 
           {/* System info card */}
           <div className="card" style={{ padding: '1.5rem' }}>
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)', marginBottom: '1rem' }}>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)', marginBottom: '1rem' }}>
               Información del Sistema
             </h2>
             <InfoFila label="Sistema"       valor="ClinicalCore EHR" />
@@ -433,11 +433,11 @@ export default function Settings() {
 
           {/* Avatar row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border)' }}>
-            <div className="avatar" style={{ width: 64, height: 64, fontSize: '1.5rem', borderRadius: 'var(--radius-lg)', flexShrink: 0 }}>
+            <div className="avatar" style={{ width: 64, height: 64, fontSize: 'var(--fs-6)', borderRadius: 'var(--radius-lg)', flexShrink: 0 }}>
               {usuario?.nombre?.[0]}{usuario?.apellidos?.[0]}
             </div>
             <div>
-              <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.0625rem' }}>
+              <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: 'var(--fs-4)' }}>
                 {usuario?.nombre} {usuario?.apellidos}
               </p>
               <span className={`badge ${rolBadge[usuario?.rol] || 'badge-warn'}`} style={{ marginTop: 6, textTransform: 'capitalize' }}>
@@ -448,7 +448,7 @@ export default function Settings() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <I.User width={14} height={14} style={{ color: 'var(--text-3)' }} />
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Datos personales</h2>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Datos personales</h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -484,7 +484,7 @@ export default function Settings() {
           <MensajeEstado msg={mensajePerfil} okText="Perfil actualizado correctamente" />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.25rem' }}>
-            <button onClick={handleGuardarPerfil} disabled={guardandoPerfil} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+            <button onClick={handleGuardarPerfil} disabled={guardandoPerfil} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
               {guardandoPerfil ? 'Guardando...' : 'Actualizar Perfil'}
             </button>
           </div>
@@ -500,8 +500,8 @@ export default function Settings() {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', marginBottom: '0.25rem' }}>
               <I.Shield width={15} height={15} style={{ color: 'var(--text-3)', marginTop: 2 }} />
               <div>
-                <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Cambiar Contraseña</h2>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>
+                <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Cambiar Contraseña</h2>
+                <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 2 }}>
                   Usa una contraseña segura de al menos 8 caracteres
                 </p>
               </div>
@@ -532,7 +532,7 @@ export default function Settings() {
               const strengthLabel = f <= 1 ? 'Muy débil' : f <= 2 ? 'Débil' : f <= 3 ? 'Moderada' : 'Fuerte ✓'
               return (
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginBottom: 6 }}>Fortaleza de la contraseña:</p>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginBottom: 6 }}>Fortaleza de la contraseña:</p>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {[1, 2, 3, 4].map(n => (
                       <div key={n} style={{
@@ -542,7 +542,7 @@ export default function Settings() {
                       }} />
                     ))}
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: strengthColor, marginTop: 5, fontWeight: 500 }}>
+                  <p style={{ fontSize: 'var(--fs-1)', color: strengthColor, marginTop: 5, fontWeight: 500 }}>
                     {strengthLabel}
                   </p>
                 </div>
@@ -550,7 +550,7 @@ export default function Settings() {
             })()}
 
             {errorPass && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
                 <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
                 {errorPass}
               </div>
@@ -560,7 +560,7 @@ export default function Settings() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.25rem' }}>
-              <button onClick={handleCambiarPassword} disabled={guardandoPass} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+              <button onClick={handleCambiarPassword} disabled={guardandoPass} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
                 {guardandoPass ? 'Actualizando...' : 'Cambiar Contraseña'}
               </button>
             </div>
@@ -568,7 +568,7 @@ export default function Settings() {
 
           {/* Active session card */}
           <div className="card" style={{ padding: '1.5rem' }}>
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)', marginBottom: '1rem' }}>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)', marginBottom: '1rem' }}>
               Sesión Activa
             </h2>
             <InfoFila label="Usuario" valor={`${usuario?.nombre} ${usuario?.apellidos}`} />
@@ -588,14 +588,14 @@ function MensajeEstado({ msg, okText }) {
   const esError = msg.startsWith('error:')
   if (esOk) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--ok-dim)', border: '1px solid var(--ok)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--ok)', fontSize: '0.875rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--ok-dim)', border: '1px solid var(--ok)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--ok)', fontSize: 'var(--fs-2)' }}>
         <I.Check width={14} height={14} /> {okText}
       </div>
     )
   }
   if (esError) {
     return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
         <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {msg.slice(6)}
       </div>
     )
@@ -617,7 +617,7 @@ function SeccionApariencia({ icon, titulo, children }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={{ color: 'var(--text-3)' }}>{icon}</span>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-2)' }}>{titulo}</p>
+        <p style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-2)' }}>{titulo}</p>
       </div>
       {children}
     </div>
@@ -627,8 +627,8 @@ function SeccionApariencia({ icon, titulo, children }) {
 function InfoFila({ label, valor, mono, capitalizar }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{label}</span>
-      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)', fontFamily: mono ? 'var(--font-mono, monospace)' : undefined, textTransform: capitalizar ? 'capitalize' : undefined }}>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ fontSize: 'var(--fs-2)', fontWeight: 500, color: 'var(--text)', fontFamily: mono ? 'var(--font-mono, monospace)' : undefined, textTransform: capitalizar ? 'capitalize' : undefined }}>
         {valor || '—'}
       </span>
     </div>

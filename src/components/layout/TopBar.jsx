@@ -95,7 +95,7 @@ export default function TopBar() {
     }}>
 
       {/* ── Left: page title ─────────────────────────────────────── */}
-      <h1 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.01em', flexShrink: 0 }}>
+      <h1 style={{ fontSize: 'var(--fs-3)', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.01em', flexShrink: 0 }}>
         {pageLabel}
       </h1>
 
@@ -111,19 +111,19 @@ export default function TopBar() {
               onBlur={() => { if (!searchVal) setSearchOpen(false) }}
               placeholder="Buscar pacientes, citas…"
               className="input"
-              style={{ paddingLeft: 30, paddingRight: 12, height: 34, fontSize: '0.8125rem' }}
+              style={{ paddingLeft: 30, paddingRight: 12, height: 34, fontSize: 'var(--fs-2)' }}
             />
           </div>
         ) : (
           <button
             onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 50) }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.375rem 0.75rem', background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-3)', fontSize: '0.8125rem', cursor: 'text', transition: 'border-color 0.15s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.375rem 0.75rem', background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-3)', fontSize: 'var(--fs-2)', cursor: 'text', transition: 'border-color 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text-3)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
             <I.Search width={13} height={13} />
             <span style={{ flex: 1, textAlign: 'left' }}>Buscar…</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '0 5px', height: 20, background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '0.6875rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--text-3)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '0 5px', height: 20, background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-1)', fontFamily: 'var(--font-mono, monospace)', color: 'var(--text-3)' }}>
               ⌘K
             </span>
           </button>
@@ -155,7 +155,7 @@ export default function TopBar() {
                 background: 'var(--danger)',
                 borderRadius: 'var(--radius-full)',
                 border: '1.5px solid var(--bg-elev)',
-                fontSize: '0.5rem', fontWeight: 700, color: 'white',
+                fontSize: 'var(--fs-1)', fontWeight: 700, color: 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '0 2px',
               }}>
@@ -179,15 +179,15 @@ export default function TopBar() {
               {/* Panel header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Notificaciones</span>
+                  <span style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>Notificaciones</span>
                   {totalNoLeidas > 0 && (
-                    <span className="badge badge-danger" style={{ fontSize: '0.625rem' }}>{totalNoLeidas}</span>
+                    <span className="badge badge-danger" style={{ fontSize: 'var(--fs-1)' }}>{totalNoLeidas}</span>
                   )}
                 </div>
                 {totalNoLeidas > 0 && (
                   <button
                     onClick={marcarTodasLeidas}
-                    style={{ fontSize: '0.6875rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    style={{ fontSize: 'var(--fs-1)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   >
                     Marcar todas leídas
                   </button>
@@ -198,7 +198,7 @@ export default function TopBar() {
               {notificaciones.length === 0 ? (
                 <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-3)' }}>
                   <I.Bell width={28} height={28} style={{ opacity: 0.3, margin: '0 auto 0.5rem', display: 'block' }} />
-                  <p style={{ fontSize: '0.8125rem' }}>Sin notificaciones</p>
+                  <p style={{ fontSize: 'var(--fs-2)' }}>Sin notificaciones</p>
                 </div>
               ) : (
                 <div>
@@ -217,14 +217,14 @@ export default function TopBar() {
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
                       onMouseLeave={e => e.currentTarget.style.background = n.leida ? 'transparent' : 'color-mix(in oklch, var(--accent) 5%, transparent)'}
                     >
-                      <span style={{ fontSize: '1rem', flexShrink: 0, marginTop: 1 }}>
+                      <span style={{ fontSize: 'var(--fs-4)', flexShrink: 0, marginTop: 1 }}>
                         {TIPO_ICONO[n.tipo] || '🔔'}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--text)', lineHeight: 1.45, fontWeight: n.leida ? 400 : 500 }}>
+                        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text)', lineHeight: 1.45, fontWeight: n.leida ? 400 : 500 }}>
                           {n.mensaje}
                         </p>
-                        <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 2 }}>
+                        <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 2 }}>
                           {tiempoRelativo(n.created)}
                         </p>
                       </div>
@@ -249,12 +249,12 @@ export default function TopBar() {
           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
-          <div className="avatar" style={{ width: 30, height: 30, fontSize: '0.6875rem' }}>{initials}</div>
+          <div className="avatar" style={{ width: 30, height: 30, fontSize: 'var(--fs-1)' }}>{initials}</div>
           <div style={{ textAlign: 'left', display: 'none' }} className="md:block">
-            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
               {usuario ? `Dr. ${usuario.nombre}` : 'Usuario'}
             </p>
-            <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
               {usuario?.especialidad || usuario?.rol || ''}
             </p>
           </div>

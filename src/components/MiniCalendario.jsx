@@ -30,7 +30,7 @@ function MiniCalendario({ anio, mes, diaSeleccionado, diasConCitas = [], onDia, 
         <button onClick={onMesAnterior} className="btn btn-ghost btn-icon" style={{ padding: '0.25rem' }}>
           <I.ChevronLeft width={14} height={14} />
         </button>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+        <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)' }}>
           {MESES[mes]} {anio}
         </span>
         <button onClick={onMesSiguiente} className="btn btn-ghost btn-icon" style={{ padding: '0.25rem' }}>
@@ -41,7 +41,7 @@ function MiniCalendario({ anio, mes, diaSeleccionado, diasConCitas = [], onDia, 
       {/* Weekday headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '0.25rem' }}>
         {DIAS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: '0.625rem', fontWeight: 700, color: 'var(--text-3)', padding: '0.25rem 0', textTransform: 'uppercase' }}>
+          <div key={d} style={{ textAlign: 'center', fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--text-3)', padding: '0.25rem 0', textTransform: 'uppercase' }}>
             {d}
           </div>
         ))}
@@ -79,7 +79,7 @@ function MiniCalendario({ anio, mes, diaSeleccionado, diasConCitas = [], onDia, 
               onMouseLeave={e => { if (!seleccionado) e.currentTarget.style.background = seleccionado ? 'var(--accent)' : esHoy(dia) ? 'var(--accent-dim)' : 'transparent' }}
             >
               <span style={{
-                fontSize: '0.75rem', fontWeight: seleccionado ? 700 : esHoy(dia) ? 600 : 400,
+                fontSize: 'var(--fs-1)', fontWeight: seleccionado ? 700 : esHoy(dia) ? 600 : 400,
                 color: seleccionado ? 'white' : esHoy(dia) ? 'var(--accent)' : 'var(--text)',
                 lineHeight: 1,
               }}>

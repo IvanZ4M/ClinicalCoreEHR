@@ -5,6 +5,7 @@ import { useRegistro } from '../hooks/usePocketBase'
 import { useTriagePaciente } from '../hooks/useTriage'
 import { useAuth } from '../context/AuthContext'
 import { validators } from '../lib/validators'
+import { formatearEdad } from '../lib/edad'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
@@ -72,6 +73,16 @@ const MEDICAMENTOS_COMUNES = [
   { nombre: 'Tramadol',        dosis: '50mg',    via: 'oral',     frecuencia: 'Cada 8 horas' },
 ]
 
+// Los cuatro pasos siguen el orden real de una consulta médica, no el orden
+// en que resultó cómodo escribir el formulario.
+const PASOS = [
+  { n: 1, titulo: 'Motivo y signos vitales', corto: 'Motivo' },
+  { n: 2, titulo: 'Exploración y diagnóstico', corto: 'Diagnóstico' },
+  { n: 3, titulo: 'Receta', corto: 'Receta' },
+  { n: 4, titulo: 'Plan y revisión', corto: 'Revisión' },
+]
+const TOTAL_PASOS = PASOS.length
+
 function buscarCIE10(termino) {
   if (!termino || termino.length < 2) return []
   const t = termino.toLowerCase()
@@ -124,6 +135,13 @@ export default function NewConsultation() {
   const [signosTouched,   setSignosTouched]   = useState({})
   const [motivoTouched,   setMotivoTouched]   = useState(false)
   const [motivoError,     setMotivoError]     = useState(null)
+
+  // ── Flujo por pasos ───────────────────────────────────────────────────────
+  // La pantalla mostraba las seis secciones apiladas en un solo scroll: en
+  // 1024x768 solo cabía el 45% del formulario y proyectada era ilegible.
+  // Dividirla en cuatro pasos además refleja el orden real de la consulta:
+  // el médico no llena un formulario, sigue el proceso clínico.
+  const [paso, setPaso] = useState(1)
 
   const SIGNOS_RULES = {
     presion_arterial:    validators.presionArterial,
@@ -258,12 +276,9 @@ export default function NewConsultation() {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30); doc.setFontSize(9)
       doc.text(`Nombre: ${paciente.nombre} ${paciente.apellidos}`, 14, y + 14)
       doc.text(`CURP: ${paciente.curp || '—'}`, 14, y + 20)
-      const edad = (() => {
-        if (!paciente.fecha_nacimiento) return '—'
-        const hoy = new Date()
-        return hoy.getFullYear() - new Date(paciente.fecha_nacimiento).getFullYear() + ' años'
-      })()
-      doc.text(`Edad: ${edad}`, ancho / 2, y + 14)
+      // Antes se restaban solo los años, sin comprobar si el cumpleaños ya pasó:
+      // la receta impresa podía envejecer al paciente un año entero.
+      doc.text(`Edad: ${formatearEdad(paciente.fecha_nacimiento)}`, ancho / 2, y + 14)
       doc.text(`Grupo sanguíneo: ${paciente.grupo_sanguineo || '—'}`, ancho / 2, y + 20)
       if (paciente.alergias_criticas && paciente.alergias) {
         doc.setFillColor(254, 235, 235)
@@ -407,12 +422,42 @@ export default function NewConsultation() {
     }
   }
 
+  // Solo el paso 1 bloquea el avance: el motivo es obligatorio y los signos
+  // vitales fuera de rango deben corregirse antes de seguir. El resto del
+  // flujo es libre — un médico puede no prescribir nada, por ejemplo.
+  const validarPaso1 = () => {
+    const mErr = validators.motivoConsulta(motivo)
+    setMotivoTouched(true)
+    setMotivoError(mErr)
+
+    const errs = {}
+    let fueraDeRango = false
+    for (const [campo, validar] of Object.entries(SIGNOS_RULES)) {
+      const e = validar(signosVitales[campo])
+      if (e) { errs[campo] = e; fueraDeRango = true }
+    }
+    if (fueraDeRango) {
+      setSignosErrors(errs)
+      setSignosTouched(Object.keys(SIGNOS_RULES).reduce((a, k) => ({ ...a, [k]: true }), {}))
+      setError('Corrige los signos vitales fuera de rango antes de continuar.')
+    }
+    return !mErr && !fueraDeRango
+  }
+
+  const irAPaso = (n) => {
+    setError('')
+    if (paso === 1 && n > 1 && !validarPaso1()) return
+    setPaso(Math.min(TOTAL_PASOS, Math.max(1, n)))
+    // Al cambiar de paso el usuario debe ver el inicio del nuevo contenido.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   if (!pacienteId) {
     return (
       <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>No se especificó un paciente.</p>
+        <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>No se especificó un paciente.</p>
         <button onClick={() => navigate('/pacientes')}
-          style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          style={{ marginTop: '1rem', fontSize: 'var(--fs-2)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <I.ArrowLeft width={13} height={13} /> Ir a pacientes
         </button>
       </div>
@@ -420,6 +465,15 @@ export default function NewConsultation() {
   }
 
   const signosCompletos = Object.values(signosVitales).filter(Boolean).length
+
+  // Marca visual de "este paso ya tiene contenido". No bloquea nada: sirve
+  // para que el médico vea de un vistazo qué le falta.
+  const pasosListos = {
+    1: Boolean(motivo.trim()),
+    2: diagnosticos.length > 0,
+    3: medicamentos.length > 0,
+    4: Boolean(planTratamiento.trim()),
+  }
 
   return (
     <div style={{ padding: '1.5rem', display: 'flex', gap: '1.25rem' }} className="anim-fade">
@@ -431,27 +485,29 @@ export default function NewConsultation() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <button onClick={() => navigate(`/pacientes/${pacienteId}`)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 4 }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-2)', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 4 }}>
               <I.ArrowLeft width={13} height={13} /> Volver al expediente
             </button>
-            <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
               Registro de Consulta
             </h1>
             {paciente && (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: 2 }}>
+              <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: 2 }}>
                 {new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => handleGuardar('borrador')} disabled={guardando} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
-              Guardar borrador
-            </button>
-            <button onClick={() => handleGuardar('completada')} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
-              {guardando ? 'Guardando...' : 'Enviar y Finalizar'}
-            </button>
-          </div>
+          {/* La acción de finalizar vive ahora en el último paso: aquí solo
+              queda guardar el borrador, disponible en cualquier momento. */}
+          <button onClick={() => handleGuardar('borrador')} disabled={guardando} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>
+            Guardar borrador
+          </button>
         </div>
+
+        <Stepper paso={paso} onIr={irAPaso} listos={pasosListos} />
+
+        {/* ══ PASO 1 — Motivo y signos vitales ══════════════════════ */}
+        {paso === 1 && (<>
 
         {/* Motivo */}
         <Seccion icon={<I.Clipboard width={15} height={15} />} titulo="Motivo de la Consulta">
@@ -466,7 +522,7 @@ export default function NewConsultation() {
             aria-invalid={motivoTouched && motivoError ? 'true' : undefined}
           />
           {motivoTouched && motivoError && (
-            <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+            <p role="alert" style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
               <I.Alert width={10} height={10} style={{ flexShrink: 0 }} />{motivoError}
             </p>
           )}
@@ -477,7 +533,7 @@ export default function NewConsultation() {
           icon={<I.Activity width={15} height={15} />}
           titulo="Signos Vitales"
           badge={triage ? (
-            <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--ok-dim)', color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--ok-dim)', color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <I.Check width={10} height={10} />
               Registrado por Enf. {triage.expand?.enfermera_id?.nombre || 'Enfermería'}
             </span>
@@ -517,14 +573,19 @@ export default function NewConsultation() {
           </div>
           {imc && (
             <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-dim)', border: '1px solid color-mix(in oklch, var(--accent) 25%, transparent)', padding: '0.625rem 1rem', borderRadius: 'var(--radius-md)' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 500 }}>IMC:</span>
-              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)' }}>{imc} kg/m²</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginLeft: 4 }}>
+              <span style={{ fontSize: 'var(--fs-2)', color: 'var(--accent)', fontWeight: 500 }}>IMC:</span>
+              <span style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text)' }}>{imc} kg/m²</span>
+              <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)', marginLeft: 4 }}>
                 {imc < 18.5 ? '— Bajo peso' : imc < 25 ? '— Peso normal ✓' : imc < 30 ? '— Sobrepeso' : '— Obesidad'}
               </span>
             </div>
           )}
         </Seccion>
+
+        </>)}
+
+        {/* ══ PASO 2 — Exploración y diagnóstico ════════════════════ */}
+        {paso === 2 && (<>
 
         {/* Exploración física */}
         <Seccion icon={<I.Stethoscope width={15} height={15} />} titulo="Exploración Física">
@@ -556,15 +617,15 @@ export default function NewConsultation() {
                   <button key={item.codigo} onClick={() => agregarDiagnostico(item)}
                     style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.15s' }}
                     className="row-hover">
-                    <span className="mono" style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.8125rem', minWidth: 48 }}>{item.codigo}</span>
-                    <span style={{ color: 'var(--text-2)', fontSize: '0.8125rem' }}>{item.desc}</span>
+                    <span className="mono" style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-2)', minWidth: 48 }}>{item.codigo}</span>
+                    <span style={{ color: 'var(--text-2)', fontSize: 'var(--fs-2)' }}>{item.desc}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
           {diagnosticos.length === 0 ? (
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1.25rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '1.25rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>
               Busca y selecciona los diagnósticos para esta consulta
             </p>
           ) : (
@@ -572,9 +633,9 @@ export default function NewConsultation() {
               {diagnosticos.map((dx, idx) => (
                 <div key={dx.codigo}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--accent-dim)', border: '1px solid color-mix(in oklch, var(--accent) 20%, transparent)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem' }}>
-                  <span className="mono" style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.8125rem', minWidth: 52 }}>{dx.codigo}</span>
-                  <span style={{ color: 'var(--text)', fontSize: '0.8125rem', flex: 1 }}>{dx.desc}</span>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: idx === 0 ? 'var(--accent)' : 'var(--bg-subtle)', color: idx === 0 ? 'white' : 'var(--text-3)', border: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                  <span className="mono" style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 'var(--fs-2)', minWidth: 52 }}>{dx.codigo}</span>
+                  <span style={{ color: 'var(--text)', fontSize: 'var(--fs-2)', flex: 1 }}>{dx.desc}</span>
+                  <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: idx === 0 ? 'var(--accent)' : 'var(--bg-subtle)', color: idx === 0 ? 'white' : 'var(--text-3)', border: idx === 0 ? 'none' : '1px solid var(--border)' }}>
                     {idx === 0 ? 'Principal' : 'Secundario'}
                   </span>
                   <button onClick={() => quitarDiagnostico(dx.codigo)}
@@ -586,6 +647,11 @@ export default function NewConsultation() {
             </div>
           )}
         </Seccion>
+
+        </>)}
+
+        {/* ══ PASO 3 — Receta ═══════════════════════════════════════ */}
+        {paso === 3 && (<>
 
         {/* Medicamentos */}
         <Seccion icon={<I.Pill width={15} height={15} />} titulo="Medicamentos Prescritos">
@@ -605,15 +671,15 @@ export default function NewConsultation() {
                   <button key={med.nombre} onClick={() => agregarMedicamento(med)}
                     style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}
                     className="row-hover">
-                    <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.875rem' }}>{med.nombre}</span>
-                    <span style={{ color: 'var(--text-3)', fontSize: '0.75rem' }}>{med.dosis} · {med.via} · {med.frecuencia}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 'var(--fs-2)' }}>{med.nombre}</span>
+                    <span style={{ color: 'var(--text-3)', fontSize: 'var(--fs-1)' }}>{med.dosis} · {med.via} · {med.frecuencia}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
           {medicamentos.length === 0 ? (
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1.25rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '1.25rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>
               Busca y selecciona los medicamentos a prescribir
             </p>
           ) : (
@@ -622,8 +688,8 @@ export default function NewConsultation() {
                 <div key={med.nombre} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem', background: 'var(--bg-inset, var(--bg))' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                     <div>
-                      <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9375rem' }}>{med.nombre}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>{med.dosis} · vía {med.via}</p>
+                      <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: 'var(--fs-3)' }}>{med.nombre}</p>
+                      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 2 }}>{med.dosis} · vía {med.via}</p>
                     </div>
                     <button onClick={() => quitarMedicamento(med.nombre)} className="btn btn-ghost btn-icon" style={{ color: 'var(--text-3)' }}>
                       <I.X width={14} height={14} />
@@ -634,14 +700,14 @@ export default function NewConsultation() {
                       <label className="field-label">Frecuencia</label>
                       <input type="text" value={med.frecuencia}
                         onChange={e => actualizarMedicamento(med.nombre, 'frecuencia', e.target.value)}
-                        className="input" style={{ fontSize: '0.8125rem' }} />
+                        className="input" style={{ fontSize: 'var(--fs-2)' }} />
                     </div>
                     <div>
                       <label className="field-label">Duración</label>
                       <input type="text" value={med.duracion}
                         onChange={e => actualizarMedicamento(med.nombre, 'duracion', e.target.value)}
                         placeholder="Ej: 7 días, 2 semanas..."
-                        className="input" style={{ fontSize: '0.8125rem' }} />
+                        className="input" style={{ fontSize: 'var(--fs-2)' }} />
                     </div>
                   </div>
                   <div style={{ marginTop: '0.625rem' }}>
@@ -649,7 +715,7 @@ export default function NewConsultation() {
                     <input type="text" value={med.indicaciones}
                       onChange={e => actualizarMedicamento(med.nombre, 'indicaciones', e.target.value)}
                       placeholder="Ej: Tomar con alimentos, evitar alcohol..."
-                      className="input" style={{ fontSize: '0.8125rem' }} />
+                      className="input" style={{ fontSize: 'var(--fs-2)' }} />
                   </div>
                 </div>
               ))}
@@ -658,13 +724,18 @@ export default function NewConsultation() {
           {medicamentos.length > 0 && (
             <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => generarRecetaPDF(null, planTratamiento)} disabled={generandoPDF}
-                className="btn btn-outline" style={{ fontSize: '0.8125rem', gap: 6 }}>
+                className="btn btn-outline" style={{ fontSize: 'var(--fs-2)', gap: 6 }}>
                 <I.PDF width={14} height={14} />
                 {generandoPDF ? 'Generando...' : 'Vista previa de receta PDF'}
               </button>
             </div>
           )}
         </Seccion>
+
+        </>)}
+
+        {/* ══ PASO 4 — Plan y revisión ══════════════════════════════ */}
+        {paso === 4 && (<>
 
         {/* Plan y tratamiento */}
         <Seccion icon={<I.Clipboard width={15} height={15} />} titulo="Plan y Tratamiento">
@@ -678,29 +749,74 @@ export default function NewConsultation() {
           />
         </Seccion>
 
+        {/* Revisión final: todo lo capturado, antes de firmar. */}
+        <Seccion icon={<I.Check width={15} height={15} />} titulo="Revisión antes de finalizar">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <FilaRevision
+              etiqueta="Motivo de la consulta"
+              contenido={motivo.trim()}
+              vacio="Sin motivo capturado"
+              onIr={() => irAPaso(1)}
+            />
+            <FilaRevision
+              etiqueta="Signos vitales"
+              contenido={signosCompletos > 0 ? `${signosCompletos} de 6 registrados${imc ? ` · IMC ${imc}` : ''}` : ''}
+              vacio="Ninguno registrado"
+              onIr={() => irAPaso(1)}
+            />
+            <FilaRevision
+              etiqueta="Exploración física"
+              contenido={exploracion.trim()}
+              vacio="Sin hallazgos capturados"
+              onIr={() => irAPaso(2)}
+            />
+            <FilaRevision
+              etiqueta="Diagnósticos"
+              contenido={diagnosticos.map(d => `${d.codigo} ${d.desc}`).join(' · ')}
+              vacio="Ningún diagnóstico"
+              onIr={() => irAPaso(2)}
+            />
+            <FilaRevision
+              etiqueta="Medicamentos"
+              contenido={medicamentos.map(m => `${m.nombre} ${m.dosis}`).join(' · ')}
+              vacio="Sin prescripción"
+              onIr={() => irAPaso(3)}
+            />
+          </div>
+        </Seccion>
+
+        </>)}
+
         {error && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+          <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
             <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
           </div>
         )}
 
-        {/* Bottom action bar */}
-        <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
-            <span style={{ width: 8, height: 8, background: 'var(--ok)', borderRadius: '50%', display: 'inline-block' }} />
-            Los cambios se guardarán al finalizar
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => navigate(`/pacientes/${pacienteId}`)} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
-              Descartar
+        {/* ── Navegación entre pasos ─────────────────────────────── */}
+        <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => (paso === 1 ? navigate(`/pacientes/${pacienteId}`) : irAPaso(paso - 1))}
+            className="btn btn-outline"
+          >
+            <I.ArrowLeft width={14} height={14} />
+            {paso === 1 ? 'Descartar' : 'Anterior'}
+          </button>
+
+          <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
+            Paso {paso} de {TOTAL_PASOS} · {PASOS[paso - 1].titulo}
+          </span>
+
+          {paso < TOTAL_PASOS ? (
+            <button onClick={() => irAPaso(paso + 1)} className="btn btn-primary">
+              Siguiente <I.ChevronRight width={14} height={14} />
             </button>
-            <button onClick={() => handleGuardar('borrador')} disabled={guardando} className="btn btn-ghost" style={{ fontSize: '0.8125rem', color: 'var(--accent)' }}>
-              Guardar borrador
+          ) : (
+            <button onClick={() => handleGuardar('completada')} disabled={guardando} className="btn btn-primary">
+              <I.Check width={14} height={14} />
+              {guardando ? 'Guardando…' : 'Firmar y finalizar'}
             </button>
-            <button onClick={() => handleGuardar('completada')} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
-              {guardando ? 'Guardando...' : 'Enviar y Finalizar'}
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -726,14 +842,14 @@ export default function NewConsultation() {
           {paciente ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div className="avatar" style={{ width: 48, height: 48, fontSize: '1.125rem', flexShrink: 0 }}>
+                <div className="avatar" style={{ width: 48, height: 48, fontSize: 'var(--fs-4)', flexShrink: 0 }}>
                   {paciente.nombre?.[0]}{paciente.apellidos?.[0]}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontWeight: 700, color: 'var(--text)', fontSize: 'var(--fs-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {paciente.nombre} {paciente.apellidos}
                   </p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 1 }}>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 1 }}>
                     #{paciente.id.slice(-6).toUpperCase()} · <span style={{ textTransform: 'capitalize' }}>{paciente.sexo || '—'}</span>
                   </p>
                 </div>
@@ -746,37 +862,37 @@ export default function NewConsultation() {
                 <div style={{ marginTop: '0.75rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.625rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <I.Alert width={11} height={11} style={{ color: 'var(--danger)' }} />
-                    <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Alergias Críticas</p>
+                    <p style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Alergias Críticas</p>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>{paciente.alergias}</p>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)' }}>{paciente.alergias}</p>
                 </div>
               )}
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', color: 'var(--text-3)' }}>
               <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', marginBottom: 8 }} className="anim-spin" />
-              <p style={{ fontSize: '0.75rem' }}>Cargando paciente...</p>
+              <p style={{ fontSize: 'var(--fs-1)' }}>Cargando paciente...</p>
             </div>
           )}
         </div>
 
         {/* Consultation summary */}
         <div className="card" style={{ padding: '1.25rem' }}>
-          <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
             Resumen
           </p>
           <InfoRow label="Diagnósticos"  valor={diagnosticos.length.toString()} />
           <InfoRow label="Medicamentos"  valor={medicamentos.length.toString()} />
           <InfoRow label="Signos vitales" valor={`${signosCompletos} / 6`} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>Motivo</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: motivo ? 'var(--ok)' : 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>Motivo</span>
+            <span style={{ fontSize: 'var(--fs-1)', fontWeight: 500, color: motivo ? 'var(--ok)' : 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
               {motivo ? <><I.Check width={11} height={11} /> Listo</> : 'Pendiente'}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>Plan</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: planTratamiento ? 'var(--ok)' : 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>Plan</span>
+            <span style={{ fontSize: 'var(--fs-1)', fontWeight: 500, color: planTratamiento ? 'var(--ok)' : 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
               {planTratamiento ? <><I.Check width={11} height={11} /> Listo</> : 'Pendiente'}
             </span>
           </div>
@@ -786,12 +902,97 @@ export default function NewConsultation() {
   )
 }
 
+/** Indicador de progreso de la consulta. Permite volver a un paso anterior. */
+function Stepper({ paso, onIr, listos }) {
+  return (
+    <nav aria-label="Progreso de la consulta" className="card" style={{ padding: '0.875rem 1rem' }}>
+      <ol style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', listStyle: 'none', margin: 0, padding: 0 }}>
+        {PASOS.map(({ n, corto }, i) => {
+          const activo    = n === paso
+          const anterior  = n < paso
+          const completo  = listos[n]
+          return (
+            <li key={n} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: i < PASOS.length - 1 ? 1 : 'none', minWidth: 0 }}>
+              <button
+                onClick={() => onIr(n)}
+                aria-current={activo ? 'step' : undefined}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: activo ? 'var(--accent-dim)' : 'transparent',
+                  border: 'none', borderRadius: 'var(--radius-md)',
+                  padding: '0.375rem 0.625rem', cursor: 'pointer', minWidth: 0,
+                  transition: 'background 0.15s',
+                }}
+              >
+                <span style={{
+                  width: 26, height: 26, flexShrink: 0,
+                  borderRadius: 'var(--radius-full)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 'var(--fs-1)', fontWeight: 700,
+                  background: activo ? 'var(--accent)' : anterior || completo ? 'var(--ok-dim)' : 'var(--bg-subtle)',
+                  color:      activo ? 'white'        : anterior || completo ? 'var(--ok)'     : 'var(--text-3)',
+                  border:     activo ? 'none' : '1px solid var(--border)',
+                }}>
+                  {(anterior || completo) && !activo ? <I.Check width={13} height={13} /> : n}
+                </span>
+                <span style={{
+                  fontSize: 'var(--fs-2)',
+                  fontWeight: activo ? 600 : 500,
+                  color: activo ? 'var(--accent)' : 'var(--text-2)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {corto}
+                </span>
+              </button>
+              {i < PASOS.length - 1 && (
+                <span aria-hidden="true" style={{
+                  flex: 1, height: 2, minWidth: 12, borderRadius: 1,
+                  background: n < paso ? 'var(--ok)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                }} />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
+/** Fila del resumen final, con acceso directo al paso que la origina. */
+function FilaRevision({ etiqueta, contenido, vacio, onIr }) {
+  const hay = Boolean(contenido)
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+      padding: '0.75rem', borderRadius: 'var(--radius-md)',
+      background: 'var(--bg)', border: '1px solid var(--border)',
+    }}>
+      <I.Check
+        width={15} height={15}
+        style={{ flexShrink: 0, marginTop: 2, color: hay ? 'var(--ok)' : 'var(--text-3)', opacity: hay ? 1 : 0.4 }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {etiqueta}
+        </p>
+        <p style={{ fontSize: 'var(--fs-2)', color: hay ? 'var(--text)' : 'var(--text-3)', marginTop: 2, fontStyle: hay ? 'normal' : 'italic' }}>
+          {hay ? contenido : vacio}
+        </p>
+      </div>
+      <button onClick={onIr} className="btn btn-ghost" style={{ fontSize: 'var(--fs-1)', color: 'var(--accent)', flexShrink: 0, padding: '0.25rem 0.5rem' }}>
+        Editar
+      </button>
+    </div>
+  )
+}
+
 function Seccion({ icon, titulo, badge, children }) {
   return (
     <div className="card" style={{ padding: '1.25rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-3)' }}>
         {icon}
-        <h2 style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <h2 style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {titulo}
         </h2>
         {badge && <div style={{ marginLeft: 'auto' }}>{badge}</div>}
@@ -805,7 +1006,7 @@ function CampoSigno({ label, unidad, placeholder, valor, onChange, onBlur, tipo 
   const showError = !!(touched && error)
   return (
     <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '0.75rem', border: `1px solid ${showError ? 'var(--danger)' : 'var(--border)'}` }}>
-      <label style={{ display: 'block', fontSize: '0.625rem', color: showError ? 'var(--danger)' : 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.06em', marginBottom: 6 }}>
+      <label style={{ display: 'block', fontSize: 'var(--fs-1)', color: showError ? 'var(--danger)' : 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.06em', marginBottom: 6 }}>
         {label}
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -815,14 +1016,14 @@ function CampoSigno({ label, unidad, placeholder, valor, onChange, onBlur, tipo 
           onChange={e => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 700, color: showError ? 'var(--danger)' : 'var(--text)', minWidth: 0, fontVariantNumeric: 'tabular-nums' }}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 'var(--fs-4)', fontWeight: 700, color: showError ? 'var(--danger)' : 'var(--text)', minWidth: 0, fontVariantNumeric: 'tabular-nums' }}
           className="tabular"
           aria-invalid={showError ? 'true' : undefined}
         />
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unidad}</span>
+        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', flexShrink: 0 }}>{unidad}</span>
       </div>
       {showError && (
-        <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', marginTop: '0.375rem', lineHeight: 1.3 }}>
+        <p role="alert" style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', marginTop: '0.375rem', lineHeight: 1.3 }}>
           {error}
         </p>
       )}
@@ -833,8 +1034,8 @@ function CampoSigno({ label, unidad, placeholder, valor, onChange, onBlur, tipo 
 function InfoRow({ label, valor, mono }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{label}</span>
-      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)', fontFamily: mono ? 'var(--font-mono, monospace)' : undefined }}>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ fontSize: 'var(--fs-1)', fontWeight: 500, color: 'var(--text)', fontFamily: mono ? 'var(--font-mono, monospace)' : undefined }}>
         {valor || '—'}
       </span>
     </div>

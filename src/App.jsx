@@ -28,7 +28,7 @@ function Spinner() {
     <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spinCw 0.8s linear infinite', margin: '0 auto 12px' }} />
-        <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Cargando sistema...</p>
+        <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>Cargando sistema...</p>
       </div>
     </div>
   )
@@ -68,12 +68,12 @@ function ErrorPagina() {
   return (
     <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
-        <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</p>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>Error en la página</h2>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontFamily: 'var(--font-mono)', textAlign: 'left', wordBreak: 'break-all' }}>
+        <p style={{ fontSize: 'var(--fs-7)', marginBottom: '1rem' }}>⚠️</p>
+        <h2 style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>Error en la página</h2>
+        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontFamily: 'var(--font-mono)', textAlign: 'left', wordBreak: 'break-all' }}>
           {error?.message || String(error)}
         </p>
-        <button onClick={() => navigate('/')} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+        <button onClick={() => navigate('/')} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
           Volver al Panel
         </button>
       </div>

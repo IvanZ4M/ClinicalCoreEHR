@@ -19,7 +19,7 @@ export function FormField({ label, error, touched, required, children }) {
         'aria-invalid': showError ? 'true' : undefined,
       })}
       {showError && (
-        <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.125rem' }}>
+        <p role="alert" style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.125rem' }}>
           <I.Alert width={10} height={10} style={{ flexShrink: 0 }} />
           {error}
         </p>

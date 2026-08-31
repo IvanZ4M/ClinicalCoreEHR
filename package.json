@@ -32,7 +32,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "resources/logo-medico.ico"
@@ -47,6 +49,9 @@
     }
   },
   "dependencies": {
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "electron-log": "^5.4.4",
     "framer-motion": "^12.38.0",
     "jspdf": "^4.2.1",

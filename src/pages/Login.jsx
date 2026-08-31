@@ -47,21 +47,21 @@ export default function Login() {
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               background: 'var(--warn-dim)', border: '1px solid var(--warn)',
               borderRadius: 10, padding: '0.625rem 0.875rem',
-              fontSize: '0.8125rem', color: 'var(--warn)', marginBottom: '1.25rem',
+              fontSize: 'var(--fs-2)', color: 'var(--warn)', marginBottom: '1.25rem',
             }}>
               <I.Lock width={13} height={13} style={{ flexShrink: 0 }} />
               Tu sesión se cerró automáticamente por inactividad.
             </div>
           )}
 
-          <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-2)', marginBottom: '1.75rem' }}>
+          <p style={{ textAlign: 'center', fontSize: 'var(--fs-2)', color: 'var(--text-2)', marginBottom: '1.75rem' }}>
             Ingresa tus credenciales para continuar
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: '0.375rem' }}>Correo electrónico</label>
+              <label style={{ display: 'block', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-2)', marginBottom: '0.375rem' }}>Correo electrónico</label>
               <div style={{ position: 'relative' }}>
                 <I.Mail width={14} height={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
                 <input
@@ -75,7 +75,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: '0.375rem' }}>Contraseña</label>
+              <label style={{ display: 'block', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-2)', marginBottom: '0.375rem' }}>Contraseña</label>
               <div style={{ position: 'relative' }}>
                 <I.Lock width={14} height={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
                 <input
@@ -108,13 +108,13 @@ export default function Login() {
 
           </form>
 
-          <p style={{ textAlign: 'center', fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: '1.5rem', lineHeight: 1.5 }}>
+          <p style={{ textAlign: 'center', fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: '1.5rem', lineHeight: 1.5 }}>
             Acceso exclusivo para personal médico autorizado
           </p>
         </div>
       </div>
 
-      <p style={{ marginTop: '1.5rem', fontSize: '0.6875rem', color: 'var(--text-3)', position: 'relative', zIndex: 1 }}>
+      <p style={{ marginTop: '1.5rem', fontSize: 'var(--fs-1)', color: 'var(--text-3)', position: 'relative', zIndex: 1 }}>
         © {new Date().getFullYear()} ClinicalCore EHR
       </p>
     </div>
@@ -127,10 +127,10 @@ function BrandingPanel() {
       <div style={{ width: 54, height: 54, borderRadius: 15, background: 'linear-gradient(135deg, oklch(55% 0.20 214) 0%, oklch(57% 0.22 195) 100%)', boxShadow: '0 4px 20px oklch(55% 0.20 214 / 0.30)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
         <I.Pulse width={26} height={26} stroke="white" strokeWidth={2} />
       </div>
-      <h1 style={{ marginTop: '1rem', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
+      <h1 style={{ marginTop: '1rem', fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
         ClinicalCore <span style={{ color: 'var(--accent)' }}>EHR</span>
       </h1>
-      <p style={{ marginTop: '0.375rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+      <p style={{ marginTop: '0.375rem', fontSize: 'var(--fs-1)', fontWeight: 600, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
         Sistema de Expedientes Clínicos
       </p>
     </div>
@@ -139,7 +139,7 @@ function BrandingPanel() {
 
 function ErrorMessage({ msg }) {
   return (
-    <div className="login-error-enter" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 10, padding: '0.75rem 0.875rem', color: 'var(--danger)', fontSize: '0.8125rem' }}>
+    <div className="login-error-enter" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 10, padding: '0.75rem 0.875rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
       <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
       {msg}
     </div>

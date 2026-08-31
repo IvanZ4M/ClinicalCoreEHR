@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts'
 import { useColeccion } from '../hooks/usePocketBase'
+import pb from '../lib/pb'
 import { useAuth } from '../context/AuthContext'
 import { I } from '../components/icons'
 
@@ -54,9 +55,9 @@ function StatCard({ label, value, sub, Icon, colorVar, dimVar }) {
           <Icon width={18} height={18} style={{ color: colorVar }} />
         </div>
       </div>
-      <p className="tabular" style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{value}</p>
-      <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>{label}</p>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
+      <p className="tabular" style={{ fontSize: 'var(--fs-7)', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>{label}</p>
+      <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
     </div>
   )
 }
@@ -68,19 +69,23 @@ export default function Reports() {
   const { usuario } = useAuth()
   const esMedico = usuario?.rol === 'medico'
   const medicoId = usuario?.id || ''
-  const filtroMedico = esMedico && medicoId ? `medico = "${medicoId}" && ` : ''
-  const filtroDxMedico = esMedico && medicoId ? `consulta.medico = "${medicoId}" && ` : ''
+  // VULN-FIX (ÁREA 9): filtros parametrizados con pb.filter()
+  const filtroMedico   = esMedico && medicoId ? pb.filter('medico = {:m} && ', { m: medicoId }) : ''
+  const filtroDxMedico = esMedico && medicoId ? pb.filter('consulta.medico = {:m} && ', { m: medicoId }) : ''
 
-  const { datos: pacientes } = useColeccion('pacientes', { filtro: 'activo = true', porPagina: 500 })
-  const { datos: consultas } = useColeccion('consultas', {
-    filtro: `${filtroMedico}estado = "completada" && fecha >= "${fechaInicio}" && fecha <= "${fechaFin}"`,
+  const { datos: pacientes, truncado: truncPac } = useColeccion('pacientes', { filtro: 'activo = true', porPagina: 500 })
+  const { datos: consultas, truncado: truncCon } = useColeccion('consultas', {
+    filtro: filtroMedico + pb.filter('estado = "completada" && fecha >= {:d1} && fecha <= {:d2}',
+                                     { d1: fechaInicio, d2: fechaFin }),
     porPagina: 500, expandir: 'medico,paciente',
   })
-  const { datos: diagnosticos } = useColeccion('diagnosticos', {
-    filtro: `${filtroDxMedico}created >= "${fechaInicio}" && created <= "${fechaFin}"`, porPagina: 500,
+  const { datos: diagnosticos, truncado: truncDx } = useColeccion('diagnosticos', {
+    filtro: filtroDxMedico + pb.filter('created >= {:d1} && created <= {:d2}',
+                                       { d1: fechaInicio, d2: fechaFin }), porPagina: 500,
   })
-  const { datos: citas } = useColeccion('citas', {
-    filtro: `${filtroMedico}fecha_hora >= "${fechaInicio}" && fecha_hora <= "${fechaFin}"`, porPagina: 500,
+  const { datos: citas, truncado: truncCitas } = useColeccion('citas', {
+    filtro: filtroMedico + pb.filter('fecha_hora >= {:d1} && fecha_hora <= {:d2}',
+                                     { d1: fechaInicio, d2: fechaFin }), porPagina: 500,
   })
 
   const citasCompletadas = citas.filter(c => c.estado === 'completada').length
@@ -138,25 +143,51 @@ export default function Reports() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>Reportes y Estadísticas</h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>Monitoreo global de la actividad clínica y demográfica</p>
+          <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>Reportes y Estadísticas</h1>
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>Monitoreo global de la actividad clínica y demográfica</p>
         </div>
         <div style={{ display: 'flex', gap: '0.375rem' }}>
           {PERIODOS.map(p => (
             <button key={p.valor} onClick={() => setPeriodo(p.valor)}
               className={p.valor === periodo ? 'btn btn-primary' : 'btn btn-outline'}
-              style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}>
+              style={{ fontSize: 'var(--fs-2)', padding: '0.375rem 0.75rem' }}>
               {p.etiqueta}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Cada consulta trae como máximo 500 registros. Si alguna se corta, las
+          cifras de abajo están calculadas sobre datos incompletos y decirlo es
+          obligatorio: un informe clínico que miente en silencio es peor que no
+          tener informe. */}
+      {(truncPac || truncCon || truncDx || truncCitas) && (
+        <div role="alert" style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
+          background: 'var(--warn-dim)', border: '1px solid var(--warn)',
+          borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--text)',
+        }}>
+          <I.Alert width={15} height={15} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
+          <div>
+            <p style={{ fontSize: 'var(--fs-2)', fontWeight: 600 }}>Cifras parciales</p>
+            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', marginTop: 2 }}>
+              El período seleccionado supera el límite de 500 registros por consulta,
+              así que estos totales están calculados sobre una parte de los datos.
+              Elige un período más corto para obtener cifras exactas.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Stats ──────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem' }}>
         <StatCard label="Consultas Completadas" value={consultas.length} sub={`período ${periodoLabel}`} Icon={I.Stethoscope} colorVar="var(--accent)" dimVar="var(--accent-dim)" />
-        <StatCard label="Total Pacientes"        value={pacientes.length} sub="activos en el sistema" Icon={I.Patients} colorVar="var(--ok)" dimVar="var(--ok-dim)" />
-        <StatCard label="Diagnósticos"           value={diagnosticos.length} sub={`período ${periodoLabel}`} Icon={I.Clipboard} colorVar="var(--violet)" dimVar="var(--violet-dim)" />
+        {/* Un padrón de pacientes no está "ok" ni los diagnósticos son
+            "en consulta": son conteos neutros. Reservar el color con
+            significado hace que destaque el único que sí lo tiene, la
+            ocupación medida contra su meta. */}
+        <StatCard label="Total Pacientes"        value={pacientes.length} sub="activos en el sistema" Icon={I.Patients} colorVar="var(--accent)" dimVar="var(--accent-dim)" />
+        <StatCard label="Diagnósticos"           value={diagnosticos.length} sub={`período ${periodoLabel}`} Icon={I.Clipboard} colorVar="var(--accent)" dimVar="var(--accent-dim)" />
         <StatCard label="Ocupación de Citas"     value={`${ocupacion}%`} sub={ocupacion >= 90 ? 'Meta alcanzada' : 'Meta: 90%'} Icon={I.Calendar}
           colorVar={ocupacion >= 90 ? 'var(--ok)' : 'var(--warn)'} dimVar={ocupacion >= 90 ? 'var(--ok-dim)' : 'var(--warn-dim)'} />
       </div>
@@ -169,15 +200,15 @@ export default function Reports() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <I.Activity width={15} height={15} style={{ color: 'var(--text-3)' }} />
             <div>
-              <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Top Diagnósticos (CIE-10)</h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>Frecuencia por código diagnóstico</p>
+              <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Top Diagnósticos (CIE-10)</h2>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>Frecuencia por código diagnóstico</p>
             </div>
           </div>
           {topDiagnosticos.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, color: 'var(--text-3)' }}>
               <I.Activity width={32} height={32} style={{ marginBottom: '0.5rem', opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>Sin datos aún</p>
-              <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.7 }}>Se mostrarán al registrar consultas</p>
+              <p style={{ fontSize: 'var(--fs-2)' }}>Sin datos aún</p>
+              <p style={{ fontSize: 'var(--fs-1)', marginTop: '0.25rem', opacity: 0.7 }}>Se mostrarán al registrar consultas</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -185,11 +216,11 @@ export default function Reports() {
                 const pct = Math.round((dx.casos / topDiagnosticos[0].casos) * 100)
                 return (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <span className="tabular" style={{ fontSize: '0.6875rem', color: 'var(--text-3)', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                    <span className="tabular" style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '0.5rem' }}>{dx.nombre}</span>
-                        <span className="tabular" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{dx.casos}</span>
+                        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '0.5rem' }}>{dx.nombre}</span>
+                        <span className="tabular" style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{dx.casos}</span>
                       </div>
                       <div style={{ width: '100%', background: 'var(--bg-inset)', borderRadius: 'var(--radius-full)', height: 5 }}>
                         <div style={{ width: `${pct}%`, height: 5, background: CHART_HEX[i % CHART_HEX.length], borderRadius: 'var(--radius-full)', transition: 'width 0.5s var(--ease-out)' }} />
@@ -205,13 +236,13 @@ export default function Reports() {
         {/* Pirámide poblacional */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div style={{ marginBottom: '1rem' }}>
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Pirámide Poblacional</h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>Distribución por edad y sexo</p>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Pirámide Poblacional</h2>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>Distribución por edad y sexo</p>
           </div>
           {pacientes.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, color: 'var(--text-3)' }}>
               <I.Patients width={32} height={32} style={{ marginBottom: '0.5rem', opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>Sin pacientes registrados</p>
+              <p style={{ fontSize: 'var(--fs-2)' }}>Sin pacientes registrados</p>
             </div>
           ) : (
             <>
@@ -227,7 +258,7 @@ export default function Reports() {
               </ResponsiveContainer>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
                 {[['#3b82f6','Hombres'],['#db2777','Mujeres']].map(([c,l]) => (
-                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: 'var(--text-2)' }}>
+                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>
                     <span style={{ width: 12, height: 12, borderRadius: 2, background: c }} /> {l}
                   </div>
                 ))}
@@ -235,8 +266,8 @@ export default function Reports() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
                 {[['Edad Media', `${edadMedia} años`], ['Ratio F:M', ratioFM]].map(([l, v]) => (
                   <div key={l} style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{l}</p>
-                    <p className="tabular" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>{v}</p>
+                    <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{l}</p>
+                    <p className="tabular" style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>{v}</p>
                   </div>
                 ))}
               </div>
@@ -248,7 +279,7 @@ export default function Reports() {
       {/* ── By specialty ───────────────────────────────────────────── */}
       {consultasPorEsp.length > 0 && (
         <div className="card" style={{ padding: '1.25rem' }}>
-          <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)', marginBottom: '1rem' }}>Consultas por Especialidad</h2>
+          <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)', marginBottom: '1rem' }}>Consultas por Especialidad</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <ResponsiveContainer width={200} height={200}>
               <PieChart>
@@ -262,8 +293,8 @@ export default function Reports() {
               {consultasPorEsp.map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ width: 12, height: 12, borderRadius: 'var(--radius-full)', flexShrink: 0, background: CHART_HEX[i % CHART_HEX.length] }} />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-2)', flex: 1 }}>{item.name}</span>
-                  <span className="tabular" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>{item.value}</span>
+                  <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', flex: 1 }}>{item.name}</span>
+                  <span className="tabular" style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)' }}>{item.value}</span>
                 </div>
               ))}
             </div>
@@ -274,19 +305,19 @@ export default function Reports() {
       {/* ── Recent activity ────────────────────────────────────────── */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Actividad de Consultas Recientes</h2>
+          <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Actividad de Consultas Recientes</h2>
         </div>
         {actividadReciente.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--text-3)' }}>
             <I.Stethoscope width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
-            <p style={{ fontSize: '0.875rem' }}>Sin consultas registradas aún</p>
+            <p style={{ fontSize: 'var(--fs-2)' }}>Sin consultas registradas aún</p>
           </div>
         ) : (
-          <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', fontSize: 'var(--fs-2)', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Fecha / Hora', 'Paciente', 'Especialidad', 'Médico', 'Estado'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                 ))}
               </tr>
             </thead>

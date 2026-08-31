@@ -51,10 +51,10 @@ export default function Sidebar() {
           <I.Pulse width={18} height={18} stroke="white" strokeWidth={2} />
         </div>
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+          <p style={{ fontWeight: 700, fontSize: 'var(--fs-2)', color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
             ClinicalCore
           </p>
-          <p style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
+          <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
             EHR Sistema
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function Sidebar() {
 
       {/* ── Nav ────────────────────────────────────────────────────── */}
       <nav style={{ flex: 1, padding: '0 0.625rem', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        <p style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', padding: '0 0.625rem', marginBottom: '0.375rem' }}>
+        <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', padding: '0 0.625rem', marginBottom: '0.375rem' }}>
           Módulos
         </p>
 
@@ -78,7 +78,7 @@ export default function Sidebar() {
               style={{ textDecoration: 'none' }}
             >
               <Icon width={16} height={16} style={{ flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: '0.8125rem' }}>{label}</span>
+              <span style={{ flex: 1, fontSize: 'var(--fs-2)' }}>{label}</span>
               {active && (
                 <span style={{
                   width: 6, height: 6,
@@ -98,7 +98,7 @@ export default function Sidebar() {
           <button
             onClick={() => navigate('/consulta/nueva')}
             className="btn btn-primary"
-            style={{ width: '100%', fontSize: '0.8125rem', gap: '0.375rem' }}
+            style={{ width: '100%', fontSize: 'var(--fs-2)', gap: '0.375rem' }}
           >
             <I.Plus width={15} height={15} />
             Nueva Consulta
@@ -110,14 +110,14 @@ export default function Sidebar() {
 
       {/* ── User card ──────────────────────────────────────────────── */}
       <div style={{ padding: '0.75rem 0.625rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-        <div className="avatar" style={{ width: 32, height: 32, fontSize: '0.6875rem' }}>
+        <div className="avatar" style={{ width: 32, height: 32, fontSize: 'var(--fs-1)' }}>
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+          <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
             {usuario ? `${usuario.nombre} ${usuario.apellidos}` : 'Usuario'}
           </p>
-          <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {rolLabel}
           </p>
         </div>

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useColeccion } from '../hooks/usePocketBase'
 import { saludo } from '../lib/roles'
 import { I } from '../components/icons'
+import { formatearEdad } from '../lib/edad'
 
 function hoyRango() {
   const d = new Date()
@@ -69,14 +70,14 @@ export default function EnfermeriaQueue() {
       {/* ── Header ────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {saludo(usuario?.nombre || 'Enfermera', 'enfermera')}
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>
             {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={recargar} className="btn btn-ghost" style={{ fontSize: '0.8125rem' }}>
+        <button onClick={recargar} className="btn btn-ghost" style={{ fontSize: 'var(--fs-2)' }}>
           <I.Refresh width={14} height={14} /> Actualizar
         </button>
       </div>
@@ -92,7 +93,7 @@ export default function EnfermeriaQueue() {
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <I.Stethoscope width={15} height={15} style={{ color: 'var(--warn)' }} />
-          <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Sala de espera</h2>
+          <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Sala de espera</h2>
           {!cargando && (
             <span className="badge badge-warn" style={{ marginLeft: 'auto' }}>{enSala.length}</span>
           )}
@@ -123,22 +124,22 @@ export default function EnfermeriaQueue() {
                   }}
                 >
                   {/* Avatar */}
-                  <div className="avatar" style={{ width: 42, height: 42, fontSize: '0.75rem', flexShrink: 0 }}>
+                  <div className="avatar" style={{ width: 42, height: 42, fontSize: 'var(--fs-1)', flexShrink: 0 }}>
                     {initials}
                   </div>
 
                   {/* Patient info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9375rem' }}>
+                      <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: 'var(--fs-3)' }}>
                         {pac ? `${pac.nombre} ${pac.apellidos}` : '—'}
                       </p>
                       {edad !== null && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{edad} años</span>
+                        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{formatearEdad(pac?.fecha_nacimiento)}</span>
                       )}
                       {pac?.alergias && (
                         <span style={{
-                          fontSize: '0.625rem', fontWeight: 700,
+                          fontSize: 'var(--fs-1)', fontWeight: 700,
                           padding: '2px 6px', borderRadius: 'var(--radius-full)',
                           background: 'var(--danger-dim)', color: 'var(--danger)',
                         }}>
@@ -147,11 +148,11 @@ export default function EnfermeriaQueue() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                         {formatearHora(cita.fecha_hora)} · {TIPO_LABEL[cita.tipo] || cita.tipo}
                       </span>
                       {med && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                           Dr. {med.nombre} {med.apellidos}
                         </span>
                       )}
@@ -163,7 +164,7 @@ export default function EnfermeriaQueue() {
                     {yaValorado ? (
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '0.375rem',
-                        fontSize: '0.8125rem', color: 'var(--ok)', fontWeight: 600,
+                        fontSize: 'var(--fs-2)', color: 'var(--ok)', fontWeight: 600,
                       }}>
                         <I.Check width={15} height={15} /> Valoración completa
                       </div>
@@ -171,7 +172,7 @@ export default function EnfermeriaQueue() {
                       <button
                         onClick={() => navigate(`/enfermeria/${cita.id}`)}
                         className="btn btn-primary"
-                        style={{ fontSize: '0.8125rem' }}
+                        style={{ fontSize: 'var(--fs-2)' }}
                       >
                         <I.Stethoscope width={14} height={14} /> Iniciar valoración
                       </button>
@@ -191,12 +192,12 @@ function StatCard({ label, value, Icon, colorVar, dimVar }) {
   return (
     <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+        <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
         <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', background: dimVar, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon width={15} height={15} style={{ color: colorVar }} />
         </div>
       </div>
-      <p style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+      <p style={{ fontSize: 'var(--fs-6)', fontWeight: 700, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
     </div>
   )
 }
@@ -205,14 +206,14 @@ function CargandoFila() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem', color: 'var(--text-3)', gap: '0.75rem' }}>
       <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%' }} className="anim-spin" />
-      <p style={{ fontSize: '0.875rem' }}>Cargando...</p>
+      <p style={{ fontSize: 'var(--fs-2)' }}>Cargando...</p>
     </div>
   )
 }
 
 function VacioFila({ texto }) {
   return (
-    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-3)', fontSize: '0.875rem' }}>
+    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>
       <I.Check width={28} height={28} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />
       {texto}
     </div>

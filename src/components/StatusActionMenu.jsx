@@ -148,7 +148,7 @@ export default function StatusActionMenu({
             minWidth: 210, overflow: 'hidden',
           }}>
           {pacienteNombre && (
-            <div style={{ padding: '0.5rem 0.875rem', borderBottom: '1px solid var(--border)', fontSize: '0.6875rem', color: 'var(--text-3)', fontWeight: 500 }}>
+            <div style={{ padding: '0.5rem 0.875rem', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-1)', color: 'var(--text-3)', fontWeight: 500 }}>
               {pacienteNombre}
             </div>
           )}
@@ -176,7 +176,7 @@ export default function StatusActionMenu({
                   style={{
                     width: '100%', textAlign: 'left', padding: '0.5rem 0.875rem',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: '0.8125rem', color: accion.color || 'var(--text)',
+                    fontSize: 'var(--fs-2)', color: accion.color || 'var(--text)',
                     fontWeight: accion.destructivo ? 500 : 600,
                     display: 'flex', alignItems: 'center', gap: '0.5rem',
                     transition: 'background 0.1s',
@@ -191,7 +191,7 @@ export default function StatusActionMenu({
             </div>
           ) : (
             <div style={{ padding: '0.75rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text)', fontWeight: 600 }}>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text)', fontWeight: 600 }}>
                 {pendiente.accion.accion === 'navegar_consulta'
                   ? '¿Iniciar consulta?'
                   : `¿${pendiente.accion.label}?`
@@ -204,22 +204,22 @@ export default function StatusActionMenu({
                   placeholder="Motivo (opcional)..."
                   rows={2}
                   className="input"
-                  style={{ fontSize: '0.75rem', resize: 'none' }}
+                  style={{ fontSize: 'var(--fs-1)', resize: 'none' }}
                   autoFocus
                 />
               )}
               {errorLocal && (
-                <p style={{ fontSize: '0.6875rem', color: 'var(--danger)' }}>{errorLocal}</p>
+                <p style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)' }}>{errorLocal}</p>
               )}
               <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button onClick={cerrar} className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}>
+                <button onClick={cerrar} className="btn btn-ghost" style={{ fontSize: 'var(--fs-1)', padding: '0.25rem 0.75rem' }}>
                   No
                 </button>
                 <button
                   onClick={confirmar}
                   disabled={guardando}
                   style={{
-                    fontSize: '0.75rem', padding: '0.25rem 0.875rem',
+                    fontSize: 'var(--fs-1)', padding: '0.25rem 0.875rem',
                     background: pendiente.accion.color, color: 'white',
                     border: 'none', borderRadius: 'var(--radius-md)',
                     cursor: guardando ? 'default' : 'pointer', fontWeight: 600,

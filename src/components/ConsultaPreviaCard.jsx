@@ -29,7 +29,7 @@ function SeccionHeader({ icon, label }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.625rem' }}>
       {icon}
-      <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         {label}
       </span>
     </div>
@@ -40,12 +40,12 @@ function SVitales({ label, valor, unidad }) {
   if (!valor) return null
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-inset)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.75rem', gap: 2 }}>
-      <span style={{ fontSize: '0.5625rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
         {label}
       </span>
-      <span className="tabular" style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text)' }}>
+      <span className="tabular" style={{ fontSize: 'var(--fs-3)', fontWeight: 700, color: 'var(--text)' }}>
         {valor}
-        {unidad && <span style={{ fontSize: '0.625rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: 2 }}>{unidad}</span>}
+        {unidad && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', fontWeight: 400, marginLeft: 2 }}>{unidad}</span>}
       </span>
     </div>
   )
@@ -103,19 +103,19 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Meta chips */}
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap' }}>
                   {formatearFechaHora(consulta.fecha)}
                 </span>
                 {tipo && (
-                  <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '1px 7px', borderRadius: 3, ...tipoStyle }}>
+                  <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, padding: '1px 7px', borderRadius: 3, ...tipoStyle }}>
                     {TIPO_CITA_LABEL[tipo]}
                   </span>
                 )}
-                <span className={consulta.estado === 'completada' ? 'badge badge-ok' : 'badge badge-warn'} style={{ fontSize: '0.625rem' }}>
+                <span className={consulta.estado === 'completada' ? 'badge badge-ok' : 'badge badge-warn'} style={{ fontSize: 'var(--fs-1)' }}>
                   {consulta.estado === 'completada' ? 'Completada' : 'Borrador'}
                 </span>
                 {consulta.expand?.medico && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     Dr. {consulta.expand.medico.nombre} {consulta.expand.medico.apellidos}
                   </span>
                 )}
@@ -124,15 +124,15 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
               {/* Primary diagnosis (always visible) */}
               {principal ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="mono" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
+                  <span className="mono" style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
                     {principal.codigo_cie10}
                   </span>
-                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)' }}>
+                  <span style={{ fontSize: 'var(--fs-3)', fontWeight: 600, color: 'var(--text)' }}>
                     {principal.descripcion}
                   </span>
                 </div>
               ) : (
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-3)', fontStyle: 'italic' }}>
+                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', fontStyle: 'italic' }}>
                   {consulta.motivo || 'Sin diagnóstico registrado'}
                 </p>
               )}
@@ -142,7 +142,7 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
               onClick={onToggle}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)',
+                fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--accent)',
                 background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
                 padding: '0.25rem 0',
               }}
@@ -186,13 +186,13 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                   label="Motivo y Exploración"
                 />
                 {consulta.motivo && (
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '0.5rem' }}>
+                  <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '0.5rem' }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-3)' }}>Motivo: </span>
                     {consulta.motivo}
                   </p>
                 )}
                 {consulta.exploracion_fisica && (
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.6 }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-3)' }}>Exploración: </span>
                     {consulta.exploracion_fisica}
                   </p>
@@ -210,13 +210,13 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {diagnosticos.map(dx => (
                     <div key={dx.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
-                      <span className="mono" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
+                      <span className="mono" style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
                         {dx.codigo_cie10}
                       </span>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text)', flex: 1 }}>
+                      <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text)', flex: 1 }}>
                         {dx.descripcion}
                       </span>
-                      <span style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'capitalize', flexShrink: 0 }}>
+                      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textTransform: 'capitalize', flexShrink: 0 }}>
                         {dx.tipo}
                       </span>
                     </div>
@@ -234,7 +234,7 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                 />
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {medicamentos.map((med, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: '0.8125rem', color: 'var(--text-2)' }}>
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: 'var(--fs-2)', color: 'var(--text-2)' }}>
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', marginTop: 6, flexShrink: 0 }} />
                       <span>
                         <strong style={{ color: 'var(--text)' }}>{med.nombre}</strong>
@@ -258,7 +258,7 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                   icon={<I.Clipboard width={13} height={13} style={{ color: 'var(--text-3)' }} />}
                   label="Plan y Tratamiento"
                 />
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
                   {consulta.plan_tratamiento}
                 </p>
               </div>
@@ -272,19 +272,19 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                   label="Valoración de Enfermería"
                 />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.375rem', marginBottom: triage.queja_principal ? '0.625rem' : 0 }}>
-                  {triage.presion_arterial   && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>PA: {triage.presion_arterial}</span>}
-                  {triage.temperatura        && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>Temp: {triage.temperatura}°C</span>}
-                  {triage.frecuencia_cardiaca && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>FC: {triage.frecuencia_cardiaca} lpm</span>}
-                  {triage.saturacion_oxigeno && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>SpO₂: {triage.saturacion_oxigeno}%</span>}
-                  {triage.peso               && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>Peso: {triage.peso} kg</span>}
+                  {triage.presion_arterial   && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>PA: {triage.presion_arterial}</span>}
+                  {triage.temperatura        && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>Temp: {triage.temperatura}°C</span>}
+                  {triage.frecuencia_cardiaca && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>FC: {triage.frecuencia_cardiaca} lpm</span>}
+                  {triage.saturacion_oxigeno && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>SpO₂: {triage.saturacion_oxigeno}%</span>}
+                  {triage.peso               && <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>Peso: {triage.peso} kg</span>}
                 </div>
                 {triage.queja_principal && (
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginBottom: '0.375rem' }}>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)', marginBottom: '0.375rem' }}>
                     <strong>Queja: </strong>{triage.queja_principal}
                   </p>
                 )}
                 {triageNurse && (
-                  <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)' }}>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                     Registrado por: Enf. {triageNurse.nombre} {triageNurse.apellidos}
                   </p>
                 )}

@@ -125,7 +125,10 @@ export default function Appointments() {
       // Validate no duplicate: same patient + medico + same datetime (excluding cancelled)
       const fechaFormateada = new Date(form.fecha_hora).toISOString().replace('T', ' ').slice(0, 19)
       const duplicados = await pb.collection('citas').getList(1, 1, {
-        filter: `paciente = "${form.paciente}" && medico = "${form.medico}" && fecha_hora = "${fechaFormateada}" && estado != "cancelada"`,
+        filter: pb.filter(
+          'paciente = {:pac} && medico = {:med} && fecha_hora = {:fh} && estado != "cancelada"',
+          { pac: form.paciente, med: form.medico, fh: fechaFormateada }
+        ),
       })
       if (duplicados.totalItems > 0) {
         setErrorForm('Ya existe una cita para este paciente con este médico en esa fecha y hora.')
@@ -166,39 +169,42 @@ export default function Appointments() {
   const esHoy = (dia) => dia === hoy.getDate() && mesActual === hoy.getMonth() && anioActual === hoy.getFullYear()
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', gap: '1.25rem' }} className="anim-fade">
+    <div style={{ padding: '1.5rem', display: 'flex', gap: '1.25rem', height: '100%', boxSizing: 'border-box' }} className="anim-fade">
 
       {/* ── Calendar column ───────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
         {/* Month header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <button onClick={mesAnterior} className="btn btn-ghost btn-icon" style={{ fontSize: '1.25rem', lineHeight: 1 }}>‹</button>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', minWidth: 220, textAlign: 'center' }}>
+            <button onClick={mesAnterior} className="btn btn-ghost btn-icon" style={{ fontSize: 'var(--fs-5)', lineHeight: 1 }}>‹</button>
+            <h2 style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text)', minWidth: 220, textAlign: 'center' }}>
               {MESES[mesActual]} {anioActual}
             </h2>
-            <button onClick={mesSiguiente} className="btn btn-ghost btn-icon" style={{ fontSize: '1.25rem', lineHeight: 1 }}>›</button>
-            <button onClick={irAHoy} className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', marginLeft: '0.25rem' }}>Hoy</button>
+            <button onClick={mesSiguiente} className="btn btn-ghost btn-icon" style={{ fontSize: 'var(--fs-5)', lineHeight: 1 }}>›</button>
+            <button onClick={irAHoy} className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: 'var(--fs-1)', marginLeft: '0.25rem' }}>Hoy</button>
           </div>
-          <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+          <button onClick={() => setModalAbierto(true)} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
             <I.Plus width={14} height={14} /> Nueva Cita
           </button>
         </div>
 
         {/* Calendar grid */}
-        <div className="card" style={{ overflow: 'hidden' }}>
+        {/* El calendario crece con la ventana: las celdas dejan de tener una
+            altura fija de 76px y reparten el espacio disponible, así caben más
+            citas por día sin recortarlas. */}
+        <div className="card" style={{ overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
             {DIAS.map(d => (
-              <div key={d} style={{ padding: '0.75rem 0', textAlign: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div key={d} style={{ padding: '0.75rem 0', textAlign: 'center', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {d}
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridAutoRows: '1fr', flex: 1, minHeight: 0 }}>
             {diasCalendario.map((dia, idx) => {
-              if (!dia) return <div key={`v-${idx}`} style={{ height: 76, borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)' }} />
+              if (!dia) return <div key={`v-${idx}`} style={{ minHeight: 76, borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)' }} />
 
               const seleccionado = dia === diaSeleccionado
               const citasDelDia  = citasMes.filter(c => c.fecha_hora && new Date(c.fecha_hora).getDate() === dia)
@@ -209,7 +215,7 @@ export default function Appointments() {
                   key={dia}
                   onClick={() => setDiaSeleccionado(dia)}
                   style={{
-                    height: 76, borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)',
+                    minHeight: 76, borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)',
                     padding: '0.375rem', textAlign: 'left', cursor: 'pointer', background: 'none',
                     transition: 'background 0.1s',
                     outline: seleccionado ? '2px solid var(--accent)' : 'none',
@@ -221,7 +227,7 @@ export default function Appointments() {
                 >
                   <span style={{
                     width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    borderRadius: 'var(--radius-full)', fontSize: '0.75rem', marginBottom: 2,
+                    borderRadius: 'var(--radius-full)', fontSize: 'var(--fs-1)', marginBottom: 2,
                     background: esHoy(dia) ? 'var(--accent)' : 'transparent',
                     color: esHoy(dia) ? 'white' : seleccionado ? 'var(--accent)' : 'var(--text)',
                     fontWeight: esHoy(dia) ? 700 : 500,
@@ -229,7 +235,7 @@ export default function Appointments() {
                     {dia}
                   </span>
                   {citasDelDia.length > 0 && (
-                    <div style={{ fontSize: '0.625rem', padding: '1px 4px', borderRadius: 3, background: col.bg, color: col.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 'var(--fs-1)', padding: '1px 4px', borderRadius: 3, background: col.bg, color: col.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {citasDelDia.length === 1 ? formatearHora(citasDelDia[0].fecha_hora) : `${citasDelDia.length} citas`}
                     </div>
                   )}
@@ -244,7 +250,7 @@ export default function Appointments() {
           {Object.entries(ESTADO_LABEL).map(([key, label]) => {
             const col = ESTADO_COLOR[key]
             return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: 'var(--text-2)' }}>
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: 'var(--fs-1)', color: 'var(--text-2)' }}>
                 <span style={{ width: 8, height: 8, borderRadius: 'var(--radius-full)', background: col.text }} />
                 {label}
               </div>
@@ -254,12 +260,12 @@ export default function Appointments() {
       </div>
 
       {/* ── Right column ──────────────────────────────────────────── */}
-      <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
 
         {/* Day agenda */}
-        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexShrink: 0 }}>
-            <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>
+            <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>
               {diaSeleccionado} de {MESES[mesActual]}
             </h3>
             <span className="badge badge-neutral">{citasDia.length} cita{citasDia.length !== 1 ? 's' : ''}</span>
@@ -268,24 +274,27 @@ export default function Appointments() {
           {citasDia.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 0', color: 'var(--text-3)' }}>
               <I.Calendar width={28} height={28} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
-              <p style={{ fontSize: '0.75rem', fontWeight: 500 }}>Sin citas este día</p>
-              <button onClick={() => setModalAbierto(true)} style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <p style={{ fontSize: 'var(--fs-1)', fontWeight: 500 }}>Sin citas este día</p>
+              <button onClick={() => setModalAbierto(true)} style={{ marginTop: '0.5rem', fontSize: 'var(--fs-1)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 + Agregar cita
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: 'calc(100svh - 260px)' }}>
+            // Antes tenía maxHeight con un número mágico (100svh - 260px) que
+            // no acompañaba a los cambios de escala tipográfica. Ahora crece
+            // con el contenedor.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', flex: 1, minHeight: 0 }}>
               {[...citasDia].sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora)).map(cita => {
                 const pac = cita.expand?.paciente
                 const col = ESTADO_COLOR[cita.estado] || ESTADO_COLOR.programada
                 return (
                   <div key={cita.id} style={{ borderLeft: `3px solid ${col.border}`, borderRadius: `0 var(--radius-md) var(--radius-md) 0`, padding: '0.625rem 0.75rem', background: col.bg }}>
                     {/* Row 1: patient name */}
-                    <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {pac ? `${pac.nombre} ${pac.apellidos}` : 'Paciente'}
                     </p>
                     {/* Row 2: time + type */}
-                    <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 2 }}>
+                    <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 2 }}>
                       {formatearHora(cita.fecha_hora)} · {TIPOS_CITA.find(t => t.valor === cita.tipo)?.etiqueta || cita.tipo}
                       {cita.consultorio ? ` · ${cita.consultorio}` : ''}
                     </p>
@@ -310,21 +319,9 @@ export default function Appointments() {
           )}
         </div>
 
-        {/* Mini next-month preview */}
-        <div className="card" style={{ padding: '1rem' }}>
-          <h4 style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
-            {MESES[mesActual === 11 ? 0 : mesActual + 1]} {mesActual === 11 ? anioActual + 1 : anioActual}
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, textAlign: 'center' }}>
-            {DIAS.map(d => <div key={d} style={{ fontSize: '0.5625rem', color: 'var(--text-3)', paddingBottom: 4 }}>{d[0]}</div>)}
-            {obtenerDiasDelMes(mesActual === 11 ? anioActual + 1 : anioActual, mesActual === 11 ? 0 : mesActual + 1)
-              .map((dia, idx) => (
-                <div key={idx} style={{ fontSize: '0.6875rem', padding: '2px 0', borderRadius: 3, color: dia ? 'var(--text-2)' : 'transparent' }}>
-                  {dia || ''}
-                </div>
-              ))}
-          </div>
-        </div>
+        {/* Se eliminó el mini-calendario del mes siguiente: no era interactivo,
+            no aportaba información accionable y usaba tipografía de 9px que
+            desaparecía al proyectar. El espacio lo ocupa ahora la agenda del día. */}
       </div>
 
       {/* ── Modal: Nueva Cita ─────────────────────────────────────── */}
@@ -337,7 +334,7 @@ export default function Appointments() {
                 <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <I.Calendar width={14} height={14} style={{ color: 'var(--accent)' }} />
                 </div>
-                <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>Nueva Cita</h2>
+                <h2 style={{ fontWeight: 700, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Nueva Cita</h2>
               </div>
               <button onClick={cerrarModal} className="btn btn-ghost btn-icon">
                 <I.X width={16} height={16} />
@@ -391,13 +388,13 @@ export default function Appointments() {
                   <button
                     type="button"
                     onClick={() => { setConsultorioAutoFilled(false); setForm(f => ({ ...f, consultorio: '' })) }}
-                    style={{ fontSize: '0.6875rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2 }}
+                    style={{ fontSize: 'var(--fs-1)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2 }}
                   >
                     Cambiar manualmente
                   </button>
                 )}
                 {form.medico && !cargandoConsultorio && !consultorioAutoFilled && !form.consultorio && (
-                  <p style={{ fontSize: '0.6875rem', color: 'var(--warn)', marginTop: 2 }}>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--warn)', marginTop: 2 }}>
                     El médico no tiene consultorio asignado
                   </p>
                 )}
@@ -416,15 +413,15 @@ export default function Appointments() {
               </div>
 
               {errorForm && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
                   <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {errorForm}
                 </div>
               )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-              <button onClick={cerrarModal} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
-              <button onClick={handleGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+              <button onClick={cerrarModal} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>Cancelar</button>
+              <button onClick={handleGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
                 {guardando ? 'Guardando...' : 'Guardar Cita'}
               </button>
             </div>

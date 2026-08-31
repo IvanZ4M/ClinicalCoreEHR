@@ -29,12 +29,12 @@ export default function MetricCard({ label, value, Icon, colorVar, dimVar, loadi
         <Icon width={15} height={15} style={{ color: colorVar }} />
       </div>
       <p className="tabular" style={{
-        fontSize: '1.625rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1,
+        fontSize: 'var(--fs-6)', fontWeight: 700, color: 'var(--text)', lineHeight: 1,
       }}>
         {loading ? '—' : isNumeric ? <motion.span>{rounded}</motion.span> : value}
       </p>
       <p style={{
-        fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-3)',
+        fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)',
         textTransform: 'uppercase', letterSpacing: '0.06em',
         marginTop: '0.375rem', lineHeight: 1.4,
       }}>

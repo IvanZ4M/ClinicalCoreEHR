@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
 import { PATIENT_TABS_POR_ROL } from '../lib/roles'
+import { formatearEdad } from '../lib/edad'
 import pb from '../lib/pb'
 import { logAuditEvent } from '../services/auditService'
 import { I } from '../components/icons'
@@ -89,7 +90,7 @@ export default function PatientDetail() {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div style={{ textAlign: 'center', color: 'var(--text-3)' }}>
         <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', margin: '0 auto 12px' }} className="anim-spin" />
-        <p style={{ fontSize: '0.875rem' }}>Cargando expediente...</p>
+        <p style={{ fontSize: 'var(--fs-2)' }}>Cargando expediente...</p>
       </div>
     </div>
   )
@@ -99,7 +100,7 @@ export default function PatientDetail() {
       <div style={{ textAlign: 'center', color: 'var(--text-3)' }}>
         <I.Alert width={40} height={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
         <p style={{ fontWeight: 500, color: 'var(--text-2)' }}>Paciente no encontrado</p>
-        <button onClick={() => navigate('/pacientes')} style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '1rem auto 0' }}>
+        <button onClick={() => navigate('/pacientes')} style={{ marginTop: '1rem', fontSize: 'var(--fs-2)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '1rem auto 0' }}>
           <I.ArrowLeft width={13} height={13} /> Volver a pacientes
         </button>
       </div>
@@ -113,7 +114,7 @@ export default function PatientDetail() {
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="anim-fade">
 
       {/* ── Back ─────────────────────────────────────────────────── */}
-      <button onClick={() => navigate('/pacientes')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      <button onClick={() => navigate('/pacientes')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-2)', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}>
         <I.ArrowLeft width={14} height={14} /> Volver a Pacientes
@@ -122,37 +123,37 @@ export default function PatientDetail() {
       {/* ── Patient header ───────────────────────────────────────── */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-          <div className="avatar" style={{ width: 72, height: 72, fontSize: '1.5rem', borderRadius: 'var(--radius-lg)', flexShrink: 0 }}>
+          <div className="avatar" style={{ width: 72, height: 72, fontSize: 'var(--fs-6)', borderRadius: 'var(--radius-lg)', flexShrink: 0 }}>
             {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
               <div>
-                <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                   {paciente.nombre} {paciente.apellidos}
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.625rem', marginTop: '0.5rem' }}>
-                  <span className="mono" style={{ fontSize: '0.6875rem', background: 'var(--bg-subtle)', color: 'var(--text-3)', border: '1px solid var(--border)', padding: '0 6px', borderRadius: 'var(--radius-sm)' }}>
+                  <span className="mono" style={{ fontSize: 'var(--fs-1)', background: 'var(--bg-subtle)', color: 'var(--text-3)', border: '1px solid var(--border)', padding: '0 6px', borderRadius: 'var(--radius-sm)' }}>
                     #{paciente.id.slice(-6).toUpperCase()}
                   </span>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)' }}>{calcularEdad(paciente.fecha_nacimiento)} años</span>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)', textTransform: 'capitalize' }}>{paciente.sexo || '—'}</span>
+                  <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)' }}>{formatearEdad(paciente.fecha_nacimiento)}</span>
+                  <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', textTransform: 'capitalize' }}>{paciente.sexo || '—'}</span>
                   {paciente.grupo_sanguineo && paciente.grupo_sanguineo !== 'Desconocido'
-                    ? <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{paciente.grupo_sanguineo}</span>
-                    : <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)' }}>Tipo desconocido</span>
+                    ? <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)' }}>{paciente.grupo_sanguineo}</span>
+                    : <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>Tipo desconocido</span>
                   }
                 </div>
-                <p className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+                <p className="mono" style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: '0.25rem' }}>
                   CURP: {paciente.curp || '—'}
                 </p>
               </div>
-              <button onClick={() => navigate(`/consulta/nueva?paciente=${id}`)} className="btn btn-primary" style={{ flexShrink: 0, fontSize: '0.8125rem' }}>
+              <button onClick={() => navigate(`/consulta/nueva?paciente=${id}`)} className="btn btn-primary" style={{ flexShrink: 0, fontSize: 'var(--fs-2)' }}>
                 <I.Plus width={14} height={14} /> Nueva Consulta
               </button>
             </div>
 
             {paciente.alergias_criticas && paciente.alergias && (
-              <div style={{ marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '0.5rem 0.875rem', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', fontWeight: 600 }}>
+              <div style={{ marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '0.5rem 0.875rem', borderRadius: 'var(--radius-md)', fontSize: 'var(--fs-2)', fontWeight: 600 }}>
                 <I.Alert width={14} height={14} />
                 ALERGIAS CRÍTICAS: {paciente.alergias.toUpperCase()}
               </div>
@@ -173,15 +174,18 @@ export default function PatientDetail() {
 
       {/* ── TAB: Datos Personales ─────────────────────────────────── */}
       {tabActiva === 'Datos Personales' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: '1rem' }}>
+        // De 3 columnas a 2: con tres, la de Signos Vitales quedaba enorme y
+        // medio vacía mientras Condiciones Actuales se estrechaba. Los datos de
+        // contacto y próxima cita pasan a una franja inferior a todo lo ancho.
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
 
           {/* Signos vitales */}
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <I.Activity width={15} height={15} style={{ color: 'var(--text-3)' }} />
-              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', flex: 1 }}>Signos Vitales</h3>
+              <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', flex: 1 }}>Signos Vitales</h3>
               {consultas[0]?.signos_vitales && (
-                <span style={{ fontSize: '0.6875rem', color: 'var(--text-3)' }}>{formatearFecha(consultas[0]?.fecha)}</span>
+                <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{formatearFecha(consultas[0]?.fecha)}</span>
               )}
             </div>
             {consultas[0]?.signos_vitales ? (() => {
@@ -198,7 +202,7 @@ export default function PatientDetail() {
                 </div>
               )
             })() : (
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1rem 0' }}>Sin registros de signos vitales</p>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '1rem 0' }}>Sin registros de signos vitales</p>
             )}
           </div>
 
@@ -206,57 +210,57 @@ export default function PatientDetail() {
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <I.Stethoscope width={15} height={15} style={{ color: 'var(--text-3)' }} />
-              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Condiciones Actuales</h3>
+              <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>Condiciones Actuales</h3>
             </div>
             {condicionesActivas.length === 0 ? (
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1rem 0' }}>Sin condiciones registradas</p>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '1rem 0' }}>Sin condiciones registradas</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {condicionesActivas.map(dx => (
                   <div key={dx.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text)' }}>{dx.descripcion}</span>
-                      <span className={dx.estado === 'cronico' ? 'badge badge-warn' : 'badge badge-accent'} style={{ fontSize: '0.625rem' }}>
+                      <span style={{ fontSize: 'var(--fs-2)', fontWeight: 500, color: 'var(--text)' }}>{dx.descripcion}</span>
+                      <span className={dx.estado === 'cronico' ? 'badge badge-warn' : 'badge badge-accent'} style={{ fontSize: 'var(--fs-1)' }}>
                         {dx.estado === 'cronico' ? 'Crónico' : 'Activo'}
                       </span>
                     </div>
-                    <p className="mono" style={{ fontSize: '0.6875rem', color: 'var(--text-3)' }}>CIE-10: {dx.codigo_cie10}</p>
+                    <p className="mono" style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>CIE-10: {dx.codigo_cie10}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Right column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Franja inferior: ocupa las dos columnas */}
+          <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'start' }}>
             {/* Próxima cita */}
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <I.Calendar width={15} height={15} style={{ color: 'var(--text-3)' }} />
-                <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Próxima Cita</h3>
+                <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>Próxima Cita</h3>
               </div>
               {citasFuturas[0] ? (
                 <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', textTransform: 'capitalize' }}>
+                  <p style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', textTransform: 'capitalize' }}>
                     {citasFuturas[0].tipo?.replace(/_/g, ' ')}
                   </p>
-                  <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.8125rem', marginTop: '0.25rem' }}>
+                  <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: 'var(--fs-2)', marginTop: '0.25rem' }}>
                     {formatearFechaHora(citasFuturas[0].fecha_hora)}
                   </p>
                   {citasFuturas[0].expand?.medico && (
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginTop: '0.25rem' }}>
+                    <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)', marginTop: '0.25rem' }}>
                       Dr. {citasFuturas[0].expand.medico.nombre} {citasFuturas[0].expand.medico.apellidos}
                     </p>
                   )}
                 </div>
               ) : (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '0.5rem 0' }}>Sin citas próximas</p>
+                <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '0.5rem 0' }}>Sin citas próximas</p>
               )}
             </div>
 
             {/* Contacto */}
             <div className="card" style={{ padding: '1.25rem' }}>
-              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.75rem' }}>Contacto</h3>
+              <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', marginBottom: '0.75rem' }}>Contacto</h3>
               <Dato label="Teléfono" valor={paciente.telefono} />
               <Dato label="Correo"   valor={paciente.email} xs />
               <Dato label="Registro" valor={formatearFecha(paciente.created)} />
@@ -273,11 +277,11 @@ export default function PatientDetail() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <I.Shield width={15} height={15} style={{ color: 'var(--text-3)' }} />
-                <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Alergias y Reacciones</h3>
+                <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>Alergias y Reacciones</h3>
               </div>
               {!editandoAlergias && (
                 <button onClick={() => { setAlergiasTxt(paciente.alergias || ''); setEditando(true) }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-1)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
                   <I.Edit width={12} height={12} /> Editar
                 </button>
               )}
@@ -287,10 +291,10 @@ export default function PatientDetail() {
                 <textarea value={alergiasTxt} onChange={e => setAlergiasTxt(e.target.value)} rows={4}
                   className="input" style={{ resize: 'none' }} placeholder="Ej: Penicilina, Látex..." />
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={handleGuardarAlergias} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+                  <button onClick={handleGuardarAlergias} disabled={guardando} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
                     <I.Check width={13} height={13} /> {guardando ? 'Guardando...' : 'Guardar'}
                   </button>
-                  <button onClick={() => setEditando(false)} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>
+                  <button onClick={() => setEditando(false)} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>
                     <I.X width={13} height={13} /> Cancelar
                   </button>
                 </div>
@@ -298,30 +302,30 @@ export default function PatientDetail() {
             ) : (
               paciente.alergias ? (
                 <div style={{
-                  padding: '0.875rem', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', lineHeight: 1.6,
+                  padding: '0.875rem', borderRadius: 'var(--radius-md)', fontSize: 'var(--fs-2)', lineHeight: 1.6,
                   background: paciente.alergias_criticas ? 'var(--danger-dim)' : 'var(--warn-dim)',
                   border: `1px solid ${paciente.alergias_criticas ? 'var(--danger)' : 'var(--warn)'}`,
                   color: paciente.alergias_criticas ? 'var(--danger)' : 'var(--warn)',
                 }}>
                   {paciente.alergias_criticas && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 700, fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 700, fontSize: 'var(--fs-1)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
                       <I.Alert width={11} height={11} /> Críticas
                     </div>
                   )}
                   {paciente.alergias}
                 </div>
               ) : (
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-3)' }}>Sin alergias registradas</p>
+                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>Sin alergias registradas</p>
               )
             )}
           </div>
 
           <div className="card" style={{ padding: '1.25rem' }}>
-            <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '1rem' }}>Información General</h3>
+            <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', marginBottom: '1rem' }}>Información General</h3>
             <Dato label="Nombre completo"    valor={`${paciente.nombre} ${paciente.apellidos}`} />
             <Dato label="CURP"               valor={paciente.curp} mono />
             <Dato label="Fecha de nacimiento" valor={formatearFecha(paciente.fecha_nacimiento)} />
-            <Dato label="Edad"               valor={`${calcularEdad(paciente.fecha_nacimiento)} años`} />
+            <Dato label="Edad"               valor={formatearEdad(paciente.fecha_nacimiento)} />
             <Dato label="Sexo"               valor={paciente.sexo} capitalizar />
             <Dato label="Grupo sanguíneo"    valor={paciente.grupo_sanguineo} />
           </div>
@@ -332,22 +336,22 @@ export default function PatientDetail() {
       {tabActiva === 'Historial Médico' && (
         <div className="card" style={{ overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Todos los diagnósticos registrados</h3>
+            <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Todos los diagnósticos registrados</h3>
           </div>
           {diagnosticos.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 1rem', color: 'var(--text-3)' }}>
               <I.Clipboard width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>Sin diagnósticos registrados</p>
-              <button onClick={() => navigate(`/consulta/nueva?paciente=${id}`)} className="btn btn-primary" style={{ marginTop: '1rem', fontSize: '0.8125rem' }}>
+              <p style={{ fontSize: 'var(--fs-2)' }}>Sin diagnósticos registrados</p>
+              <button onClick={() => navigate(`/consulta/nueva?paciente=${id}`)} className="btn btn-primary" style={{ marginTop: '1rem', fontSize: 'var(--fs-2)' }}>
                 Iniciar primera consulta
               </button>
             </div>
           ) : (
-            <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', fontSize: 'var(--fs-2)', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   {['Código CIE-10', 'Diagnóstico', 'Tipo', 'Estado', 'Fecha'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                    <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -388,9 +392,9 @@ export default function PatientDetail() {
 function SignoVital({ label, valor, unidad }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{label}</span>
-      <span className="tabular" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>
-        {valor} <span style={{ fontSize: '0.6875rem', color: 'var(--text-3)', fontWeight: 400 }}>{unidad}</span>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{label}</span>
+      <span className="tabular" style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)' }}>
+        {valor} <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', fontWeight: 400 }}>{unidad}</span>
       </span>
     </div>
   )
@@ -399,7 +403,7 @@ function SignoVital({ label, valor, unidad }) {
 function Dato({ label, valor, mono, capitalizar, xs }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{label}</span>
       <span style={{
         fontWeight: 500,
         color: 'var(--text)',
