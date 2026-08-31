@@ -28,3 +28,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build de Electron (artefacto, se regenera con npm run build)
+dist-electron
+
+# Respaldos de PocketBase: pesados y con datos de pacientes
+pocketbase/pb_data/backups/
