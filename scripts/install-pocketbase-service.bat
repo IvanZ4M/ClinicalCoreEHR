@@ -17,8 +17,8 @@ if %errorLevel% neq 0 (
 )
 
 set NSSM=%~dp0..\resources\nssm.exe
-set PB_EXE=%~dp0..\backend\pocketbase.exe
-set PB_DIR=%~dp0..\backend
+set PB_EXE=%~dp0..\pocketbase\pocketbase.exe
+set PB_DIR=%~dp0..\pocketbase
 set LOG_DIR=%PB_DIR%\logs
 
 :: Verificar que existe nssm.exe
@@ -31,8 +31,8 @@ if not exist "%NSSM%" (
 
 :: Verificar que existe pocketbase.exe
 if not exist "%PB_EXE%" (
-  echo ERROR: No se encontro pocketbase.exe en backend\
-  echo Asegurate de haber copiado pocketbase.exe a la carpeta backend\
+  echo ERROR: No se encontro pocketbase.exe en pocketbase\
+  echo Asegurate de haber copiado pocketbase.exe a la carpeta pocketbase\
   pause
   exit /b 1
 )

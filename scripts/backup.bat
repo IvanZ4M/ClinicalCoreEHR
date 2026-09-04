@@ -8,7 +8,7 @@
 :: ── Configuración ────────────────────────────────────────────────────────────
 set BACKUP_DRIVE=D:
 set BACKUP_DIR=%BACKUP_DRIVE%\ClinicalCoreBackups
-set PB_DATA=C:\ClinicalCore\backend\pb_data
+set PB_DATA=C:\ClinicalCore\pocketbase\pb_data
 set MAX_BACKUPS=30
 
 :: Fecha en formato YYYY-MM-DD usando wmic (independiente de locale de Windows)

@@ -49,7 +49,7 @@ PocketBase es la base de datos del sistema. Debe iniciar automáticamente con Wi
 
 **Requisitos previos:**
 - Descarga **NSSM** desde https://nssm.cc/download y coloca `nssm.exe` en la carpeta `resources\`
-- Coloca `pocketbase.exe` en la carpeta `backend\`
+- `pocketbase.exe` ya viene incluido en la carpeta `pocketbase\` del repositorio; no hay que descargarlo aparte
 
 **Instalación:**
 
@@ -120,7 +120,7 @@ Los datos de los pacientes deben respaldarse diariamente en un disco externo.
 1. Conecta un disco externo (o configura una carpeta de red)
 2. Abre el archivo `scripts\backup.bat` con el Bloc de notas
 3. Cambia la variable `BACKUP_DRIVE=D:` a la letra de tu disco externo
-4. Cambia `PB_DATA=C:\ClinicalCore\backend\pb_data` a la ruta real de instalación
+4. Cambia `PB_DATA=C:\ClinicalCore\pocketbase\pb_data` a la ruta real de instalación
 
 **Programar ejecución diaria:**
 1. Abre el **Programador de tareas** (`Win + R` → `taskschd.msc`)
@@ -153,8 +153,8 @@ Los datos de los pacientes deben respaldarse diariamente en un disco externo.
 Si necesitas recuperar datos de un respaldo:
 
 1. Detén el servicio PocketBase: `services.msc` → **ClinicalCore EHR - Base de datos** → **Detener**
-2. Renombra la carpeta actual: `backend\pb_data` → `backend\pb_data_OLD`
-3. Copia la carpeta del respaldo a `backend\pb_data`
+2. Renombra la carpeta actual: `pocketbase\pb_data` → `pocketbase\pb_data_OLD`
+3. Copia la carpeta del respaldo a `pocketbase\pb_data`
 4. Reinicia el servicio PocketBase
 
 ---
