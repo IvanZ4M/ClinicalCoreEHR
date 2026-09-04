@@ -5,12 +5,21 @@ description: Vigila el control de versiones de ClinicalCoreEHR y crea los commit
 
 # Control de versiones de ClinicalCoreEHR
 
-El 31 de agosto de 2026 se descubrió que **tres días de trabajo —incluidas cuatro
-correcciones de seguridad verificadas— vivían solo en el árbol de trabajo**. El último
-commit era del 14 de mayo. Un `git checkout` descuidado o un disco muerto habría borrado
-26 tareas cerradas.
+Esta skill nació de un fallo y sobrevivió a otro. Los dos hay que tenerlos presentes.
 
-Esta skill existe para que eso no vuelva a pasar.
+**31 de agosto de 2026** — se descubrió que tres días de trabajo, incluidas cuatro
+correcciones de seguridad verificadas, vivían solo en el árbol de trabajo. El último commit
+era del 14 de mayo.
+
+**3 de septiembre de 2026** — se descubrió que `pocketbase/pb_data/data.db`, con expedientes
+y datos personales reales, llevaba **desde el primer commit** dentro del historial de git y
+publicado en un repositorio público. Hubo que reescribir el historial y recrear el
+repositorio. La versión anterior de esta skill ya decía "nunca commitees `pb_data`" y aun así
+falló: vigilaba lo que estaba a punto de **entrar** y nunca miró lo que ya estaba **dentro**.
+
+De ahí las dos reglas que dominan el resto del documento: **auditar el historial, no solo el
+árbol** (sección 2) y **comprobar la visibilidad del repositorio antes de empujar**
+(sección 7).
 
 ## 1. Cuándo revisar (sin que te lo pidan)
 
@@ -44,6 +53,38 @@ Interpreta con cuidado:
 - Fíjate en la **fecha del último commit** (`git log -1 --format=%ad --date=short`). Si
   tiene más de unos días y el árbol está sucio, dilo antes que nada.
 - Rama activa: el trabajo va en `feat/ui-redesign`. **Nunca commitees directo a `main`.**
+- Los SHA anteriores al 3/09/2026 **ya no existen**: el historial se reescribió. Si una nota
+  o una tarjeta de Asana cita un SHA viejo, no lo busques, contrástalo con `CLAUDE.md`.
+
+### Auditoría del historial — obligatoria, no solo el árbol de trabajo
+
+`git status` y `git diff` solo ven el presente. Un archivo puede estar limpio hoy y llevar
+años dentro del historial. Comprueba las dos cosas:
+
+```bash
+# 1. Que hay AHORA en el indice (presente)
+git ls-files pocketbase/pb_data/ scripts/ .env
+
+# 2. Que hubo ALGUNA VEZ en el historial (pasado) — esto es lo que se paso por alto
+git log --all --oneline -- 'pocketbase/pb_data/*'
+git rev-list --objects --all | grep -iE 'pb_data|\.db$|\.env|backup|\.sqlite'
+
+# 3. Que cree que esta ignorado, y por que regla
+git check-ignore -v pocketbase/pb_data/data.db
+```
+
+Tres trampas que costaron caro y que hay que leer bien:
+
+- **`git check-ignore` sin salida y con código de salida 1 significa NO ignorado.** El
+  silencio no es aprobación.
+- **Filtra e ignora por directorio, no por archivo.** `pb_data/data.db` deja fuera
+  `data.db-wal` y `data.db-shm`, los write-ahead logs de SQLite, que contienen transacciones
+  sin volcar. La regla correcta es `pocketbase/pb_data/`.
+- **`git ls-files` muestra el índice, no el historial.** Para el historial es
+  `git log --all -- <ruta>` o `git rev-list --objects --all`.
+
+Si aparece cualquier cosa en el punto 2, **detente y dilo antes de commitear nada más**: no
+es una tarea de higiene para más adelante, es una fuga que puede estar publicada ahora mismo.
 
 ## 3. Qué NUNCA se commitea
 
@@ -51,8 +92,7 @@ Comprueba esto **antes** de cada `git add`:
 
 | Ruta | Por qué |
 |---|---|
-| `pocketbase/pb_data/*.db` | SQLite con expedientes de pacientes. Está versionado por un error histórico; sacarlo del índice es una tarea propia en Asana, no un efecto colateral. **Déjalo sin preparar y avisa.** |
-| `pocketbase/pb_data/backups/` | ZIP pesados con datos clínicos. Ya ignorado. |
+| `pocketbase/pb_data/` (el directorio entero) | Expedientes de pacientes. Estuvo versionado y publicado hasta el 03/09/2026; se sacó del historial. El `.gitignore` cubre el directorio completo, incluidos los `-wal` y `-shm`. **Si algún día reaparece en `git status`, es que alguien tocó el `.gitignore`: para y avisa.** |
 | `dist-electron/`, `dist/` | Artefactos de compilación. Ya ignorados. |
 | `.env*` | Credenciales. Ya ignorado. |
 
@@ -120,6 +160,20 @@ expanda `$` y backticks del mensaje).
 
 - **Nunca `git push` sin que el usuario lo pida en el momento.** Publicar es una acción
   hacia afuera.
+- **Antes de cada `git push`, comprueba a dónde vas a publicar y con qué visibilidad.**
+  Empujar a un repositorio público no es lo mismo que empujar a uno privado, y este proyecto
+  maneja expedientes clínicos:
+
+  ```bash
+  git remote -v
+  curl -s https://api.github.com/repos/<owner>/<repo> | grep -E '"(visibility|private)"'
+  ```
+
+  Si devuelve `"visibility": "public"`, dilo **antes** de empujar y confirma que el usuario lo
+  sabe. Si la petición anónima falla o devuelve 404, el repositorio es privado o no existe:
+  compruébalo, no lo supongas. Y si el push incluye archivos nuevos, pasa antes la auditoría
+  de historial de la sección 2 — en un repositorio público, un commit equivocado es una
+  publicación irreversible.
 - **Nunca fusionar a `main` sin confirmación explícita.** Existe una tarea en Asana para
   esa fusión (`1217984345164995`); cuando se haga, debe incluir copia fuera del equipo.
 - Nunca `git reset --hard`, `git checkout .` ni `git clean` sin decir antes exactamente qué
