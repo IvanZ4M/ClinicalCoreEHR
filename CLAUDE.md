@@ -81,7 +81,7 @@ Aplicadas por migración, no en el cliente. Lo esencial:
 
 ## Estado actual (3 septiembre 2026) — leer antes de tocar código
 
-Rama activa `feat/ui-redesign`, en `0e68d63`, **commiteada y empujada a `origin`**.
+Rama activa `feat/ui-redesign`, en `a2e5b0d`, **commiteada y empujada a `origin`**.
 `main` en `dc7afb0`. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
 Plan en Asana, proyecto "Plan Semanal" (`1217838653061608`), tareas con prefijo `[CCEHR]`.
 La skill `.claude/skills/asana-sync/` mantiene ese tablero sincronizado.
@@ -100,11 +100,16 @@ resuelve contra este repositorio. El motivo está en "Incidente de seguridad", m
 | `c2c9e55` — "Cuarto Commit" | podado; solo tocaba los binarios de `pb_data` |
 
 El trabajo de los días 29–31 de agosto **sí está commiteado y empujado**: 7 commits del 31/08
-más `0e68d63` del 03/09. `feat/ui-redesign` sigue **sin fusionar a `main`** — esa fusión es la
+más 6 commits del 03/09. `feat/ui-redesign` sigue **sin fusionar a `main`** — esa fusión es la
 tarea abierta más urgente (Asana `1217984345164995`).
 
 `pocketbase/pb_data/` ya no está en el repositorio ni en el historial, y el `.gitignore` ignora
 el directorio completo. La base local de trabajo sigue en su sitio, sin versionar.
+
+> ⚠️ **El repositorio de GitHub es público, por decisión deliberada:** Diego lo necesita así para
+> la defensa. El historial está limpio y las credenciales rotadas, de modo que no hay exposición
+> pendiente — pero **cada `push` es una publicación**. La skill `git-commit` obliga a comprobar la
+> visibilidad antes de empujar; ese aviso es intencional, no una alarma que haya que silenciar.
 
 ### ✅ Resuelto (26 tareas confirmadas en Asana, 29–30 agosto)
 
@@ -267,16 +272,26 @@ luego enlace de descarga en `ConsultaPreviaCard`. Asana `1217971750122965`, venc
   humo de los 4 roles, ensayo con proyector, video de respaldo y los tres bancos de preguntas por
   sinodal: 26 tareas abiertas en total, todas fechadas en Asana.
 
-### Deuda pendiente (sin cambios desde mayo)
+### Deuda pendiente
 
 - ~~`pb_data/*.db` versionado en git~~ — **resuelto el 03/09/2026**, ver "Incidente de seguridad".
+- ~~README = plantilla de Vite~~ — **resuelto el 03/09/2026** (commit `a2e5b0d`). Se recuperó el
+  README de `main`, se corrigió el modelo de despliegue y se quitaron los enlaces rotos a `docs/`,
+  que nunca existió en el historial.
+- ~~`install-pocketbase-service.bat` buscaba en `backend\`~~ — **resuelto** (commit `4ea5aaa`).
+  Sin verificar: el script no se ha ejecutado como administrador en un equipo real.
+- **`pocketbase/pocketbase.exe` (31 MB) está commiteado.** Binario de terceros, no debería
+  versionarse. **Sacarlo exige otra reescritura de historial, así que va DESPUÉS de la defensa**
+  — decisión explícita del 03/09. No es una fuga: el binario es público y descargable de
+  pocketbase.io; el coste es peso, no privacidad. Asana `1218178974697650`, fechada 10/10.
 - Falta `pocketbase/pb_public/` — el acceso por `http://IP:8090` que promete
   `README-DESPLIEGUE.md` no funciona.
 - **El Manual Técnico describe un sistema monopuesto** ("conexión de red: no requerida") pero el
-  despliegue real es en red: 1 equipo en recepción, 1 en enfermería y N en consultorios.
-  Contradicción documental y blanco directo para el prof. Diosdado. Unificar.
+  despliegue real es en red. Está **fuera del repositorio**, así que no se puede corregir desde
+  aquí; la redacción correcta ya está en `README.md`, sección "Modelo de despliegue".
+  Asana `1218178774746540`, vence 19/09. Blanco directo del prof. Diosdado.
 - Datos del consultorio en `localStorage`. CIE-10 y medicamentos hardcodeados en
-  `NewConsultation.jsx`. README = plantilla de Vite. Sin tests ni CI.
+  `NewConsultation.jsx`. Sin tests ni CI.
 - Cada pantalla conserva su `calcularEdad` local duplicado; unificar contra `src/lib/edad.js`.
 
 ### Sin verificar
