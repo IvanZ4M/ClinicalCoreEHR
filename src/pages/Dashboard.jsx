@@ -8,6 +8,7 @@ import CitaCard from '../components/CitaCard'
 import MetricCard from '../components/MetricCard'
 import DiagnosticosFrecuentes from '../components/DiagnosticosFrecuentes'
 import pb from '../lib/pb'
+import { logError } from '../lib/logger'
 import { I } from '../components/icons'
 import { safeAnimate, staggerContainer, listItem } from '../lib/animations'
 
@@ -40,13 +41,13 @@ function AgendaVacia({ onNuevaCita }) {
         <rect x="3" y="4" width="18" height="18" rx="2" />
         <path d="M16 2v4M8 2v4M3 10h18" />
       </svg>
-      <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--text-2)', marginBottom: '0.25rem' }}>
+      <p style={{ fontSize: 'var(--fs-3)', fontWeight: 500, color: 'var(--text-2)', marginBottom: '0.25rem' }}>
         No hay citas programadas para hoy
       </p>
-      <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '1.25rem' }}>
+      <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginBottom: '1.25rem' }}>
         Puedes crear una nueva consulta directamente
       </p>
-      <button onClick={onNuevaCita} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+      <button onClick={onNuevaCita} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
         <I.Plus width={14} height={14} /> Nueva consulta
       </button>
     </div>
@@ -57,8 +58,8 @@ function AgendaError({ onReintentar }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1.5rem', color: 'var(--text-3)', gap: '0.75rem' }}>
       <I.Alert width={30} height={30} style={{ opacity: 0.35 }} />
-      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>Error al cargar las citas</p>
-      <button onClick={onReintentar} className="btn btn-outline" style={{ fontSize: '0.8125rem' }}>Reintentar</button>
+      <p style={{ fontSize: 'var(--fs-2)', fontWeight: 500, color: 'var(--text-2)' }}>Error al cargar las citas</p>
+      <button onClick={onReintentar} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>Reintentar</button>
     </div>
   )
 }
@@ -114,11 +115,18 @@ export default function Dashboard() {
   const handleAccion = useCallback(async (cita) => {
     const { estado } = cita
     if (estado === 'programada' || estado === 'confirmada' || estado === 'en_sala') {
-      try { await pb.collection('citas').update(cita.id, { estado: 'en_consulta' }) } catch {}
+      // Si esto falla, el médico entra a la consulta pero la cita se queda en su
+      // estado anterior: la sala de espera muestra al paciente como no atendido.
+      try {
+        await pb.collection('citas').update(cita.id, { estado: 'en_consulta' })
+      } catch (err) {
+        logError('Dashboard.handleAccion', err)
+        toast.warning('No se pudo marcar la cita como "en consulta".')
+      }
       recargarCitas()
-      navigate(`/consulta/nueva?paciente=${cita.paciente}`)
+      navigate(`/consulta/nueva?paciente=${cita.paciente}&cita=${cita.id}`)
     } else if (estado === 'en_consulta') {
-      navigate(`/consulta/nueva?paciente=${cita.paciente}`)
+      navigate(`/consulta/nueva?paciente=${cita.paciente}&cita=${cita.id}`)
     } else if (estado === 'completada') {
       navigate(`/pacientes/${cita.paciente}`)
     }
@@ -127,29 +135,33 @@ export default function Dashboard() {
   const apellido = usuario?.apellidos || usuario?.nombre || ''
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="anim-fade">
+    // El panel ocupa la altura disponible: antes la agenda terminaba a media
+    // pantalla y quedaba ~45% de vacío, que proyectado es puro hueco negro.
+    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', height: '100%', boxSizing: 'border-box' }} className="anim-fade">
 
       {/* ── 2-column grid ────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: isWide ? '65fr 35fr' : '1fr',
         gap: '1.5rem',
-        alignItems: 'start',
+        alignItems: 'stretch',
+        flex: 1,
+        minHeight: 0,
       }}>
 
         {/* ── LEFT — Agenda protagonist ────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minHeight: 0 }}>
 
           {/* Hero header */}
           <div>
             <h1 style={{
-              fontSize: '1.5rem', fontWeight: 500,
+              fontSize: 'var(--fs-6)', fontWeight: 500,
               letterSpacing: '-0.025em', color: 'var(--text)', lineHeight: 1.2,
             }}>
               {obtenerSaludo()}, Dr.&nbsp;{apellido}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-3)' }}>
+              <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>
                 {formatearFecha(new Date())}
               </p>
               {!cargandoCitas && (
@@ -160,20 +172,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Agenda card */}
-          <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          {/* Agenda card — crece hasta llenar la columna y desplaza por dentro */}
+          <div className="card" style={{ overflow: 'hidden', padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)',
+              padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)', flexShrink: 0,
             }}>
-              <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>
+              <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>
                 Agenda del día
               </h2>
               <button
                 onClick={() => navigate('/citas')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 4,
-                  fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent)',
+                  fontSize: 'var(--fs-1)', fontWeight: 500, color: 'var(--accent)',
                   background: 'none', border: 'none', cursor: 'pointer',
                 }}
               >
@@ -181,6 +193,7 @@ export default function Dashboard() {
               </button>
             </div>
 
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
             {errorCitas ? (
               <AgendaError onReintentar={recargarCitas} />
             ) : cargandoCitas && citasOrdenadas.length === 0 ? (
@@ -204,17 +217,18 @@ export default function Dashboard() {
                 ))}
               </motion.div>
             )}
+            </div>
           </div>
         </div>
 
         {/* ── RIGHT — Support panel ────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
 
           {/* Quick action */}
           <button
             onClick={() => navigate('/citas')}
             className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center', height: 40, fontSize: '0.875rem', gap: '0.5rem' }}
+            style={{ width: '100%', justifyContent: 'center', height: 40, fontSize: 'var(--fs-2)', gap: '0.5rem' }}
           >
             <I.Plus width={15} height={15} /> Nueva consulta
           </button>
@@ -249,8 +263,8 @@ export default function Dashboard() {
               label="Próxima cita"
               value={proximaCita ? fmtHora(proximaCita.fecha_hora) : '—'}
               Icon={I.Calendar}
-              colorVar="var(--violet)"
-              dimVar="var(--violet-dim)"
+              colorVar="var(--accent)"
+              dimVar="var(--accent-dim)"
               loading={cargandoCitas}
             />
           </div>

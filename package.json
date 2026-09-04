@@ -1,38 +1,58 @@
 {
   "name": "clinical-core-ehr",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "Sistema de historia clínica electrónica para consultorios médicos",
+  "author": "Ivan Zamarrón <zamaescobedo@gmail.com>",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
     "dev": "node dev.mjs",
     "build": "vite build",
     "preview": "vite preview",
-    "dist": "vite build && electron-builder"
+    "dist": "vite build && electron-builder",
+    "build:electron": "vite build && electron-builder",
+    "start:prod": "electron .",
+    "setup": "node scripts/setup-clinic.js"
   },
   "build": {
-    "appId": "com.clinicalcore.ehr",
-    "productName": "Clinical Core EHR",
+    "appId": "mx.clinicalcore.ehr",
+    "productName": "ClinicalCore EHR",
     "directories": {
-      "buildResources": "public"
+      "output": "dist-electron",
+      "buildResources": "resources"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
+    "asar": false,
     "win": {
       "target": [
-        "nsis",
-        "portable"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/logo-medico.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ClinicalCore EHR",
+      "installerHeaderIcon": "resources/logo-medico.ico"
     }
   },
   "dependencies": {
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "electron-log": "^5.4.4",
     "framer-motion": "^12.38.0",
     "jspdf": "^4.2.1",
     "pocketbase": "^0.26.8",

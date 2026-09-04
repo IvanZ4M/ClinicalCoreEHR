@@ -20,7 +20,7 @@ function DiagnosticosFrecuentes({ diagnosticos, onVerTodos }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <I.Activity width={14} height={14} style={{ color: 'var(--text-3)' }} />
-          <h2 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>
+          <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)' }}>
             Diagnósticos frecuentes
           </h2>
         </div>
@@ -28,7 +28,7 @@ function DiagnosticosFrecuentes({ diagnosticos, onVerTodos }) {
           <button
             onClick={onVerTodos}
             style={{
-              fontSize: '0.6875rem', color: 'var(--accent)',
+              fontSize: 'var(--fs-1)', color: 'var(--accent)',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             }}
           >
@@ -38,14 +38,14 @@ function DiagnosticosFrecuentes({ diagnosticos, onVerTodos }) {
       </div>
 
       {top5.length === 0 ? (
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', padding: '1.5rem 0' }}>
+        <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textAlign: 'center', padding: '1.5rem 0' }}>
           Se mostrarán al registrar consultas
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {top5.map((dx, i) => (
             <div key={i}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-1)', marginBottom: '0.25rem' }}>
                 <span style={{
                   color: 'var(--text)', overflow: 'hidden',
                   textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '0.5rem',

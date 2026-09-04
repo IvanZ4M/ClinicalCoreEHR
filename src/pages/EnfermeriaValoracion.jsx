@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useRegistro, useColeccion } from '../hooks/usePocketBase'
 import { useAuth } from '../context/AuthContext'
 import { validators } from '../lib/validators'
+import { formatearEdad } from '../lib/edad'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 
@@ -160,7 +161,7 @@ export default function EnfermeriaValoracion() {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-3)' }}>
         <p style={{ marginBottom: '1rem' }}>Cita no encontrada.</p>
-        <button onClick={() => navigate('/enfermeria')} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>
+        <button onClick={() => navigate('/enfermeria')} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>
           <I.ChevronLeft width={14} height={14} /> Regresar
         </button>
       </div>
@@ -176,10 +177,10 @@ export default function EnfermeriaValoracion() {
           <I.ChevronLeft width={16} height={16} />
         </button>
         <div>
-          <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+          <h1 style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
             Valoración inicial de enfermería
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)' }}>
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>
             {paciente ? `${paciente.nombre} ${paciente.apellidos}` : '—'} · {TIPO_LABEL[cita.tipo] || cita.tipo}
           </p>
         </div>
@@ -198,11 +199,11 @@ export default function EnfermeriaValoracion() {
                 {`${paciente?.nombre?.[0] || ''}${paciente?.apellidos?.[0] || ''}`}
               </div>
               <div>
-                <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>
+                <p style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>
                   {paciente ? `${paciente.nombre} ${paciente.apellidos}` : '—'}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
-                  {calcularEdad(paciente?.fecha_nacimiento) !== null ? `${calcularEdad(paciente?.fecha_nacimiento)} años` : '—'}
+                <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
+                  {formatearEdad(paciente?.fecha_nacimiento)}
                   {paciente?.sexo ? ` · ${paciente.sexo}` : ''}
                 </p>
               </div>
@@ -214,10 +215,10 @@ export default function EnfermeriaValoracion() {
                 background: 'var(--danger-dim)', border: '1px solid var(--danger)',
                 borderRadius: 'var(--radius-md)', padding: '0.625rem 0.75rem', marginBottom: '0.875rem',
               }}>
-                <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: 3 }}>
+                <p style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: 3 }}>
                   <I.Alert width={12} height={12} /> ALERGIAS CONOCIDAS
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--danger)', lineHeight: 1.4 }}>{paciente.alergias}</p>
+                <p style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', lineHeight: 1.4 }}>{paciente.alergias}</p>
               </div>
             )}
 
@@ -229,7 +230,7 @@ export default function EnfermeriaValoracion() {
           {/* Last vitals reference */}
           {ultimaCx && (
             <div className="card" style={{ padding: '1.25rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
+              <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
                 Signos de última consulta
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -239,7 +240,7 @@ export default function EnfermeriaValoracion() {
                 {ultimosSV.peso               && <InfoFila label="Peso" value={`${ultimosSV.peso} kg`}              />}
                 {ultimosSV.talla              && <InfoFila label="Talla" value={`${ultimosSV.talla} cm`}            />}
               </div>
-              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', marginTop: '0.5rem' }}>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: '0.5rem' }}>
                 {new Date(ultimaCx.created).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
               </p>
             </div>
@@ -248,19 +249,19 @@ export default function EnfermeriaValoracion() {
           {/* Antecedents */}
           {(paciente?.antecedentes_personales || paciente?.antecedentes_familiares) && (
             <div className="card" style={{ padding: '1.25rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
+              <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
                 Antecedentes
               </p>
               {paciente.antecedentes_personales && (
                 <div style={{ marginBottom: '0.625rem' }}>
-                  <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginBottom: 2 }}>Personales</p>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{paciente.antecedentes_personales}</p>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginBottom: 2 }}>Personales</p>
+                  <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.5 }}>{paciente.antecedentes_personales}</p>
                 </div>
               )}
               {paciente.antecedentes_familiares && (
                 <div>
-                  <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginBottom: 2 }}>Familiares</p>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{paciente.antecedentes_familiares}</p>
+                  <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginBottom: 2 }}>Familiares</p>
+                  <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.5 }}>{paciente.antecedentes_familiares}</p>
                 </div>
               )}
             </div>
@@ -275,9 +276,9 @@ export default function EnfermeriaValoracion() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <I.Activity width={15} height={15} style={{ color: 'var(--accent)' }} />
-                <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Signos Vitales</h2>
+                <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Signos Vitales</h2>
               </div>
-              <span style={{ fontSize: '0.6875rem', color: 'var(--danger)' }}>* requeridos</span>
+              <span style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)' }}>* requeridos</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
@@ -313,7 +314,7 @@ export default function EnfermeriaValoracion() {
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
               <I.User width={15} height={15} style={{ color: 'var(--accent)' }} />
-              <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Antropometría</h2>
+              <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Antropometría</h2>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <CampoSigno label="Peso" value={form.peso}
@@ -332,14 +333,14 @@ export default function EnfermeriaValoracion() {
                 padding: '0.75rem', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
               }}>
-                <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>IMC</p>
+                <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>IMC</p>
                 {imc ? (
                   <>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{imc}</p>
-                    <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: categoriaIMC(imc)?.color }}>{categoriaIMC(imc)?.label}</p>
+                    <p style={{ fontSize: 'var(--fs-6)', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{imc}</p>
+                    <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: categoriaIMC(imc)?.color }}>{categoriaIMC(imc)?.label}</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)' }}>—</p>
+                  <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>—</p>
                 )}
               </div>
             </div>
@@ -349,7 +350,7 @@ export default function EnfermeriaValoracion() {
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
               <I.Clipboard width={15} height={15} style={{ color: 'var(--accent)' }} />
-              <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Valoración Clínica</h2>
+              <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Valoración Clínica</h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -394,7 +395,7 @@ export default function EnfermeriaValoracion() {
               display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
               background: 'var(--danger-dim)', border: '1px solid var(--danger)',
               borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem',
-              color: 'var(--danger)', fontSize: '0.875rem',
+              color: 'var(--danger)', fontSize: 'var(--fs-2)',
             }}>
               <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
             </div>
@@ -403,10 +404,10 @@ export default function EnfermeriaValoracion() {
           {/* Confirm / Actions */}
           {confirmando ? (
             <div className="card" style={{ padding: '1.25rem', border: '1px solid var(--warn)' }}>
-              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
+              <p style={{ fontSize: 'var(--fs-3)', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
                 ¿Finalizar la valoración?
               </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
                 Se registrará la valoración y el estado de la cita cambiará a <strong>En consulta</strong>. El médico será notificado.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -414,7 +415,7 @@ export default function EnfermeriaValoracion() {
                   onClick={handleGuardar}
                   disabled={guardando}
                   className="btn btn-primary"
-                  style={{ fontSize: '0.875rem', flex: 1 }}
+                  style={{ fontSize: 'var(--fs-2)', flex: 1 }}
                 >
                   <I.Check width={14} height={14} />
                   {guardando ? 'Guardando...' : 'Confirmar y finalizar'}
@@ -423,7 +424,7 @@ export default function EnfermeriaValoracion() {
                   onClick={() => setConfirmando(false)}
                   disabled={guardando}
                   className="btn btn-outline"
-                  style={{ fontSize: '0.875rem' }}
+                  style={{ fontSize: 'var(--fs-2)' }}
                 >
                   Cancelar
                 </button>
@@ -431,13 +432,13 @@ export default function EnfermeriaValoracion() {
             </div>
           ) : (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => navigate('/enfermeria')} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>
+              <button onClick={() => navigate('/enfermeria')} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>
                 Cancelar
               </button>
               <button
                 onClick={() => { if (campoReq) { setError('Completa los campos requeridos: presión arterial, temperatura, frecuencia cardíaca y queja principal.'); return } setConfirmando(true) }}
                 className="btn btn-primary"
-                style={{ fontSize: '0.875rem', minWidth: 200 }}
+                style={{ fontSize: 'var(--fs-2)', minWidth: 200 }}
               >
                 <I.Check width={14} height={14} /> Finalizar valoración
               </button>
@@ -469,14 +470,14 @@ function CampoSigno({ label, value, onChange, onBlur, placeholder, unidad, tipo 
         {unidad && (
           <span style={{
             position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
-            fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none',
+            fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none',
           }}>
             {unidad}
           </span>
         )}
       </div>
       {showError && (
-        <p role="alert" style={{ fontSize: '0.6875rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.125rem' }}>
+        <p role="alert" style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.125rem' }}>
           <I.Alert width={10} height={10} style={{ flexShrink: 0 }} />{error}
         </p>
       )}
@@ -487,8 +488,8 @@ function CampoSigno({ label, value, onChange, onBlur, placeholder, unidad, tipo 
 function InfoFila({ label, value }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', padding: '0.25rem 0' }}>
-      <span style={{ fontSize: '0.6875rem', color: 'var(--text-3)', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', textAlign: 'right' }}>{value}</span>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)', textAlign: 'right' }}>{value}</span>
     </div>
   )
 }

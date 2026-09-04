@@ -135,10 +135,10 @@ export default function Users() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>Gestión de Usuarios</h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>Administre el acceso del personal y configure permisos de seguridad</p>
+          <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>Gestión de Usuarios</h1>
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>Administre el acceso del personal y configure permisos de seguridad</p>
         </div>
-        <button onClick={() => { resetForm(); setModalAbierto(true) }} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+        <button onClick={() => { resetForm(); setModalAbierto(true) }} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
           <I.Plus width={14} height={14} /> Nuevo Usuario
         </button>
       </div>
@@ -152,9 +152,9 @@ export default function Users() {
           { label: 'Accesos Bloqueados',   value: bloqueados,    sub: bloqueados > 0 ? 'requieren atención' : 'todo en orden', colorVar: bloqueados > 0 ? 'var(--danger)' : 'var(--text-3)' },
         ].map(({ label, value, sub, colorVar }) => (
           <div key={label} className="card" style={{ padding: '1.25rem' }}>
-            <p className="tabular" style={{ fontSize: '1.875rem', fontWeight: 700, color: colorVar, lineHeight: 1 }}>{value}</p>
-            <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>{label}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
+            <p className="tabular" style={{ fontSize: 'var(--fs-7)', fontWeight: 700, color: colorVar, lineHeight: 1 }}>{value}</p>
+            <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.375rem' }}>{label}</p>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: '0.125rem' }}>{sub}</p>
           </div>
         ))}
       </div>
@@ -170,7 +170,7 @@ export default function Users() {
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
         </select>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginLeft: 'auto' }}>
+        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginLeft: 'auto' }}>
           {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -180,19 +180,19 @@ export default function Users() {
         {cargando ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
             <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', marginBottom: '0.75rem' }} className="anim-spin" />
-            <p style={{ fontSize: '0.875rem' }}>Cargando usuarios...</p>
+            <p style={{ fontSize: 'var(--fs-2)' }}>Cargando usuarios...</p>
           </div>
         ) : usuarios.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', color: 'var(--text-3)' }}>
             <I.User width={36} height={36} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
-            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>Sin usuarios encontrados</p>
+            <p style={{ fontSize: 'var(--fs-2)', fontWeight: 500, color: 'var(--text-2)' }}>Sin usuarios encontrados</p>
           </div>
         ) : (
-          <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', fontSize: 'var(--fs-2)', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Usuario', 'Rol', 'Especialidad', 'Última act.', 'Estado', 'Acciones'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -203,15 +203,15 @@ export default function Users() {
                   <tr key={u.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.75rem' }}>
+                        <div className="avatar" style={{ width: 36, height: 36, fontSize: 'var(--fs-1)' }}>
                           {u.nombre?.[0]}{u.apellidos?.[0]}
                         </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                             <span style={{ fontWeight: 600, color: 'var(--text)' }}>{u.nombre} {u.apellidos}</span>
-                            {esYo && <span className="badge badge-accent" style={{ fontSize: '0.625rem' }}>Tú</span>}
+                            {esYo && <span className="badge badge-accent" style={{ fontSize: 'var(--fs-1)' }}>Tú</span>}
                           </div>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{u.email}</p>
+                          <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>{u.email}</p>
                         </div>
                       </div>
                     </td>
@@ -219,7 +219,7 @@ export default function Users() {
                       <span className={`badge ${rolBadge(u.rol)}`}>{rolLabel(u.rol)}</span>
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)' }}>{u.especialidad || '—'}</td>
-                    <td className="tabular" style={{ padding: '0.875rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                    <td className="tabular" style={{ padding: '0.875rem 1.25rem', fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                       {formatearFecha(u.updated)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
@@ -235,11 +235,11 @@ export default function Users() {
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <button onClick={() => abrirEditar(u)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <button onClick={() => abrirEditar(u)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-1)', fontWeight: 500, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
                           <I.Edit width={11} height={11} /> Editar
                         </button>
                         {!esYo && (
-                          <button onClick={() => setConfirmBlock(u)} style={{ fontSize: '0.75rem', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                          <button onClick={() => setConfirmBlock(u)} style={{ fontSize: 'var(--fs-1)', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
                             Bloquear
                           </button>
                         )}
@@ -261,14 +261,14 @@ export default function Users() {
               <I.Shield width={14} height={14} style={{ color: 'var(--accent)' }} />
             </div>
             <div>
-              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Políticas de Acceso</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+              <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', marginBottom: '0.5rem' }}>Políticas de Acceso</h3>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
                 Cada rol tiene permisos específicos. No asigne roles de Administrador a menos que sea estrictamente necesario.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {ROLES.map(r => (
-                  <div key={r.valor} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
-                    <span className={`badge ${r.badgeClass}`} style={{ fontSize: '0.625rem' }}>{r.etiqueta}</span>
+                  <div key={r.valor} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--fs-1)' }}>
+                    <span className={`badge ${r.badgeClass}`} style={{ fontSize: 'var(--fs-1)' }}>{r.etiqueta}</span>
                     <span style={{ color: 'var(--text-3)' }}>
                       {r.valor === 'administrador' ? '— Acceso total al sistema' : ''}
                       {r.valor === 'medico' ? '— Consultas, expedientes, recetas' : ''}
@@ -288,13 +288,13 @@ export default function Users() {
               <I.Clipboard width={14} height={14} style={{ color: 'var(--text-3)' }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Registro de Auditoría</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+              <h3 style={{ fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', marginBottom: '0.5rem' }}>Registro de Auditoría</h3>
+              <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
                 Todos los cambios de roles, creaciones y modificaciones quedan registrados con marca de tiempo.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {usuarios.slice(0, 3).map(u => (
-                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
                     <span style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--border)', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.nombre} {u.apellidos} — {rolLabel(u.rol)} — {formatearFecha(u.created)}
@@ -329,16 +329,16 @@ export default function Users() {
               <div style={{ width: 36, height: 36, background: 'var(--danger-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <I.Alert width={16} height={16} style={{ color: 'var(--danger)' }} />
               </div>
-              <h3 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>¿Bloquear usuario?</h3>
+              <h3 style={{ fontWeight: 700, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>¿Bloquear usuario?</h3>
             </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
               El usuario <strong style={{ color: 'var(--text)' }}>{confirmBlock.nombre} {confirmBlock.apellidos}</strong> no podrá iniciar sesión hasta que se reactive su cuenta.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => setConfirmBlock(null)} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
+              <button onClick={() => setConfirmBlock(null)} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>Cancelar</button>
               <button
                 onClick={async () => { await pb.collection('usuarios').update(confirmBlock.id, { activo: false }); setConfirmBlock(null); recargar() }}
-                className="btn btn-danger" style={{ fontSize: '0.875rem' }}>
+                className="btn btn-danger" style={{ fontSize: 'var(--fs-2)' }}>
                 Bloquear acceso
               </button>
             </div>
@@ -359,7 +359,7 @@ function ModalUsuario({ titulo, form, setForm, formErrors, formTouched, onBlur, 
             <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <I.User width={14} height={14} style={{ color: 'var(--accent)' }} />
             </div>
-            <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)' }}>{titulo}</h2>
+            <h2 style={{ fontWeight: 700, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>{titulo}</h2>
           </div>
           <button onClick={onCerrar} className="btn btn-ghost btn-icon"><I.X width={16} height={16} /></button>
         </div>
@@ -419,20 +419,20 @@ function ModalUsuario({ titulo, form, setForm, formErrors, formTouched, onBlur, 
                 onChange={e => setForm({ ...form, consultorio: e.target.value })} />
             </div>
           )}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: 'var(--fs-2)', color: 'var(--text-2)', cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
             Usuario activo (puede iniciar sesión)
           </label>
           {errorForm && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
               <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} /> {errorForm}
             </div>
           )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-          <button onClick={onCerrar} className="btn btn-outline" style={{ fontSize: '0.875rem' }}>Cancelar</button>
-          <button onClick={onGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+          <button onClick={onCerrar} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }}>Cancelar</button>
+          <button onClick={onGuardar} disabled={guardando} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
             {guardando ? 'Guardando...' : esNuevo ? 'Crear Usuario' : 'Guardar Cambios'}
           </button>
         </div>

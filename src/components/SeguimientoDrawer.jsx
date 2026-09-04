@@ -170,10 +170,10 @@ export default function SeguimientoDrawer({
           flexShrink: 0,
         }}>
           <div>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            <h2 style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
               Agendar seguimiento
             </h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>
+            <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 2 }}>
               {pacienteNombre}
             </p>
           </div>
@@ -205,8 +205,8 @@ export default function SeguimientoDrawer({
               <I.Check width={28} height={28} style={{ color: 'var(--ok)' }} />
             </div>
             <div>
-              <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>¡Cita agendada!</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: 4 }}>
+              <p style={{ fontWeight: 700, fontSize: 'var(--fs-4)', color: 'var(--text)' }}>¡Cita agendada!</p>
+              <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: 4 }}>
                 {state.hora} · {fechaFormateada}
               </p>
             </div>
@@ -255,7 +255,7 @@ export default function SeguimientoDrawer({
                       border: state.tipo === t.valor ? '2px solid var(--accent)' : '1.5px solid var(--border)',
                       background: state.tipo === t.valor ? 'var(--accent-dim)' : 'transparent',
                       color: state.tipo === t.valor ? 'var(--accent)' : 'var(--text-2)',
-                      fontSize: '0.8125rem', fontWeight: state.tipo === t.valor ? 600 : 400,
+                      fontSize: 'var(--fs-2)', fontWeight: state.tipo === t.valor ? 600 : 400,
                       cursor: 'pointer', transition: 'all 0.1s',
                     }}
                   >
@@ -273,12 +273,12 @@ export default function SeguimientoDrawer({
                 rows={3}
                 placeholder="Instrucciones o indicaciones para el seguimiento..."
                 className="input"
-                style={{ resize: 'none', fontSize: '0.8125rem' }}
+                style={{ resize: 'none', fontSize: 'var(--fs-2)' }}
               />
             </Section>
 
             {state.errGuard && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem', color: 'var(--danger)', fontSize: '0.8125rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem', color: 'var(--danger)', fontSize: 'var(--fs-2)' }}>
                 <I.Alert width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
                 {state.errGuard}
               </div>
@@ -293,14 +293,14 @@ export default function SeguimientoDrawer({
             display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', flexShrink: 0,
             background: 'var(--bg-elev)',
           }}>
-            <button onClick={onCerrar} className="btn btn-outline" style={{ fontSize: '0.875rem' }} disabled={state.guardando}>
+            <button onClick={onCerrar} className="btn btn-outline" style={{ fontSize: 'var(--fs-2)' }} disabled={state.guardando}>
               Omitir
             </button>
             <button
               onClick={handleGuardar}
               disabled={!puedeGuardar}
               className="btn btn-primary"
-              style={{ fontSize: '0.875rem', opacity: puedeGuardar ? 1 : 0.5 }}
+              style={{ fontSize: 'var(--fs-2)', opacity: puedeGuardar ? 1 : 0.5 }}
             >
               {state.guardando ? 'Guardando...' : 'Confirmar cita'}
             </button>
@@ -317,7 +317,7 @@ export default function SeguimientoDrawer({
 function Section({ titulo, children }) {
   return (
     <div>
-      <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>
+      <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>
         {titulo}
       </p>
       {children}
@@ -328,10 +328,10 @@ function Section({ titulo, children }) {
 function MetaChip({ icon, label, value }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <span style={{ fontSize: '0.5875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 3 }}>
         {icon} {label}
       </span>
-      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)' }}>{value}</span>
+      <span style={{ fontSize: 'var(--fs-1)', fontWeight: 500, color: 'var(--text)' }}>{value}</span>
     </div>
   )
 }

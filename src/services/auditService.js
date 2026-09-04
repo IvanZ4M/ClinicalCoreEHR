@@ -4,6 +4,7 @@
 // IMPORTANTE: los errores al escribir logs se silencian — nunca deben
 // interrumpir el flujo clínico principal.
 import pb from '../lib/pb'
+import { logWarn } from '../lib/logger'
 
 export async function logAuditEvent(accion, recurso, recursoId = null) {
   try {
@@ -13,7 +14,9 @@ export async function logAuditEvent(accion, recurso, recursoId = null) {
       recurso,     // p.ej. 'usuarios', 'pacientes', 'consultas'
       recurso_id: recursoId ?? '',
     })
-  } catch {
-    // Silenciar — el log es secundario y no debe romper la operación clínica
+  } catch (err) {
+    // No interrumpe el flujo clínico, pero SÍ deja rastro: que falle la
+    // auditoría es en sí mismo un evento que hay que poder investigar.
+    logWarn('auditService', err)
   }
 }

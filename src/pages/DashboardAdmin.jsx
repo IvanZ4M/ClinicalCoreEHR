@@ -40,14 +40,14 @@ export default function DashboardAdmin() {
       {/* ── Saludo ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 'var(--fs-5)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {saludo(nombre, 'administrador')}
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: '0.25rem' }}>
             {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={() => navigate('/usuarios')} className="btn btn-primary" style={{ fontSize: '0.8125rem' }}>
+        <button onClick={() => navigate('/usuarios')} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
           <I.User width={14} height={14} /> Gestionar usuarios
         </button>
       </div>
@@ -55,9 +55,12 @@ export default function DashboardAdmin() {
       {/* ── Resumen del sistema ────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         <StatCard label="Usuarios activos"  value={cargUsuarios ? '—' : usuarios.length}       Icon={I.User}        colorVar="var(--accent)" dimVar="var(--accent-dim)" />
-        <StatCard label="Inactivos"          value={cargUsuarios ? '—' : inactivos}              Icon={I.Lock}        colorVar="var(--danger)" dimVar="var(--danger-dim)" />
+        {/* "Inactivos" era rojo: una cuenta administrativa no es un peligro
+            clínico. "Citas hoy" era violeta, color reservado al estado
+            "en consulta". Ambos pasan a color neutro de conteo. */}
+        <StatCard label="Inactivos"          value={cargUsuarios ? '—' : inactivos}              Icon={I.Lock}        colorVar="var(--text-3)" dimVar="var(--bg-subtle)" />
         <StatCard label="Consultas hoy"      value={cargConsultas ? '—' : consultas.length}     Icon={I.Stethoscope} colorVar="var(--ok)"     dimVar="var(--ok-dim)"     />
-        <StatCard label="Citas hoy"          value={cargCitas ? '—' : citasHoy.length}          Icon={I.Calendar}    colorVar="var(--violet)" dimVar="var(--violet-dim)" />
+        <StatCard label="Citas hoy"          value={cargCitas ? '—' : citasHoy.length}          Icon={I.Calendar}    colorVar="var(--accent)" dimVar="var(--accent-dim)" />
       </div>
 
       {/* ── Distribución por rol + actividad ─────────────────────────── */}
@@ -67,10 +70,10 @@ export default function DashboardAdmin() {
         <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <I.User width={15} height={15} style={{ color: 'var(--accent)' }} />
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Usuarios por rol</h2>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Usuarios por rol</h2>
           </div>
           {cargUsuarios ? (
-            <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Cargando...</p>
+            <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>Cargando...</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
               {Object.entries(ROLE_LABELS).map(([rol, etiqueta]) => {
@@ -80,10 +83,10 @@ export default function DashboardAdmin() {
                 return (
                   <div key={rol}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span className={`badge ${ROL_BADGE[rol]}`} style={{ fontSize: '0.6875rem' }}>{etiqueta}</span>
+                      <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span className={`badge ${ROL_BADGE[rol]}`} style={{ fontSize: 'var(--fs-1)' }}>{etiqueta}</span>
                       </span>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{count}</span>
+                      <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text)' }}>{count}</span>
                     </div>
                     <div style={{ height: 5, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 99, transition: 'width 0.6s var(--ease-out)' }} className="anim-bar-rise" />
@@ -99,26 +102,26 @@ export default function DashboardAdmin() {
         <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <I.Activity width={15} height={15} style={{ color: 'var(--ok)' }} />
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Consultas de hoy</h2>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Consultas de hoy</h2>
           </div>
           {cargConsultas ? (
-            <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Cargando...</p>
+            <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>Cargando...</p>
           ) : consultas.length === 0 ? (
-            <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Sin consultas registradas hoy.</p>
+            <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>Sin consultas registradas hoy.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: 220 }}>
               {consultas.map(c => (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--bg)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.estado === 'completada' ? 'var(--ok)' : 'var(--warn)', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {c.motivo || 'Sin motivo registrado'}
                     </p>
-                    <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', marginTop: 1 }}>
+                    <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', marginTop: 1 }}>
                       {new Date(c.created).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: c.estado === 'completada' ? 'var(--ok-dim)' : 'var(--warn-dim)', color: c.estado === 'completada' ? 'var(--ok)' : 'var(--warn)', textTransform: 'capitalize', flexShrink: 0 }}>
+                  <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: c.estado === 'completada' ? 'var(--ok-dim)' : 'var(--warn-dim)', color: c.estado === 'completada' ? 'var(--ok)' : 'var(--warn)', textTransform: 'capitalize', flexShrink: 0 }}>
                     {c.estado || 'borrador'}
                   </span>
                 </div>
@@ -133,11 +136,11 @@ export default function DashboardAdmin() {
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <I.User width={15} height={15} style={{ color: 'var(--accent)' }} />
-            <h2 style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Personal activo</h2>
+            <h2 style={{ fontWeight: 600, fontSize: 'var(--fs-3)', color: 'var(--text)' }}>Personal activo</h2>
           </div>
           <button
             onClick={() => navigate('/usuarios')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Ver todos <I.ChevronRight width={12} height={12} />
           </button>
@@ -148,11 +151,11 @@ export default function DashboardAdmin() {
         ) : usuarios.length === 0 ? (
           <VacioFila texto="No hay usuarios activos" />
         ) : (
-          <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', fontSize: 'var(--fs-2)', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Nombre', 'Correo', 'Rol', 'Especialidad'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '0.625rem 1.25rem', fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -163,11 +166,11 @@ export default function DashboardAdmin() {
                   <tr key={u.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                        <div className="avatar" style={{ width: 30, height: 30, fontSize: '0.6875rem' }}>{initials}</div>
+                        <div className="avatar" style={{ width: 30, height: 30, fontSize: 'var(--fs-1)' }}>{initials}</div>
                         <p style={{ fontWeight: 600, color: 'var(--text)' }}>{u.nombre} {u.apellidos}</p>
                       </div>
                     </td>
-                    <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-3)', fontSize: '0.75rem' }}>{u.email}</td>
+                    <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-3)', fontSize: 'var(--fs-1)' }}>{u.email}</td>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <span className={`badge ${ROL_BADGE[u.rol] || 'badge-neutral'}`} style={{ textTransform: 'capitalize' }}>
                         {ROLE_LABELS[u.rol] || u.rol}
@@ -191,12 +194,12 @@ function StatCard({ label, value, Icon, colorVar, dimVar }) {
   return (
     <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+        <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
         <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', background: dimVar, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon width={15} height={15} style={{ color: colorVar }} />
         </div>
       </div>
-      <p style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+      <p style={{ fontSize: 'var(--fs-6)', fontWeight: 700, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
     </div>
   )
 }
@@ -205,14 +208,14 @@ function CargandoFila() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem', color: 'var(--text-3)', gap: '0.75rem' }}>
       <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%' }} className="anim-spin" />
-      <p style={{ fontSize: '0.875rem' }}>Cargando...</p>
+      <p style={{ fontSize: 'var(--fs-2)' }}>Cargando...</p>
     </div>
   )
 }
 
 function VacioFila({ texto }) {
   return (
-    <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-3)', fontSize: '0.875rem' }}>
+    <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>
       {texto}
     </div>
   )

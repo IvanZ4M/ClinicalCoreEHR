@@ -89,7 +89,7 @@ function CitaCard({ cita, isNext, conTriage, onAccion }) {
         background: BG[idx],
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: FG[idx] }}>
+        <span style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: FG[idx] }}>
           {initials}
         </span>
       </div>
@@ -98,21 +98,21 @@ function CitaCard({ cita, isNext, conTriage, onAccion }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{
-            fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.3,
+            fontWeight: 600, fontSize: 'var(--fs-2)', color: 'var(--text)', lineHeight: 1.3,
             textDecoration: cancelada ? 'line-through' : 'none',
           }}>
             {nombre}
           </span>
           {conTriage && !cancelada && (
             <span style={{
-              fontSize: '0.5625rem', fontWeight: 700, color: 'var(--ok)',
+              fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--ok)',
               background: 'var(--ok-dim)', borderRadius: 3, padding: '1px 5px',
             }}>
               ✓ Valorado
             </span>
           )}
         </div>
-        <p style={{ fontSize: '0.7813rem', color: 'var(--text-3)', marginTop: 2, lineHeight: 1.3 }}>
+        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', marginTop: 2, lineHeight: 1.3 }}>
           {TIPO_LABEL[cita.tipo] || cita.tipo} · {fmtHora(cita.fecha_hora)}
           {cita.consultorio ? ` · ${cita.consultorio}` : ''}
         </p>
@@ -128,7 +128,7 @@ function CitaCard({ cita, isNext, conTriage, onAccion }) {
           style={{
             minWidth: 120, height: 36, padding: '0 1rem',
             borderRadius: 'var(--radius-md)',
-            fontSize: '0.8125rem', cursor: 'pointer',
+            fontSize: 'var(--fs-2)', cursor: 'pointer',
             flexShrink: 0, whiteSpace: 'nowrap',
             ...accionStyle,
           }}

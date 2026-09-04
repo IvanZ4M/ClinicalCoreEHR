@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import pb from '../lib/pb'
+import { logWarn } from '../lib/logger'
 import ConsultaPreviaCard from './ConsultaPreviaCard'
 import { I } from './icons'
 
 const POR_PAGINA = 10
+
+// VULN-FIX (ÁREA 9): construye `campo = id || campo = id || ...` enlazando cada
+// id como parámetro. El nombre del campo siempre es una constante del código.
+function filtroPorIds(campo, lista) {
+  return pb.filter(
+    lista.map((_, i) => `${campo} = {:v${i}}`).join(' || '),
+    Object.fromEntries(lista.map((v, i) => [`v${i}`, v]))
+  )
+}
 
 export default function ConsultasPrevias({ pacienteId }) {
   const navigate = useNavigate()
@@ -25,12 +35,12 @@ export default function ConsultasPrevias({ pacienteId }) {
   useEffect(() => {
     if (!pacienteId) return
     pb.collection('consultas').getList(1, 200, {
-      filter: `paciente = "${pacienteId}"`,
+      filter: pb.filter('paciente = {:pid}', { pid: pacienteId }),
       sort: '-fecha',
     }).then(r => {
       const set = new Set(r.items.map(c => new Date(c.fecha).getFullYear()))
       setAnos([...set].sort((a, b) => b - a))
-    }).catch(() => {})
+    }).catch(err => logWarn('ConsultasPrevias.anos', err))
   }, [pacienteId])
 
   const cargar = useCallback(async () => {
@@ -38,10 +48,12 @@ export default function ConsultasPrevias({ pacienteId }) {
     setCargando(true)
     try {
       const filtroAno = anoFiltro !== 'todos'
-        ? ` && fecha >= "${anoFiltro}-01-01 00:00:00" && fecha <= "${anoFiltro}-12-31 23:59:59"`
+        ? pb.filter(' && fecha >= {:desde} && fecha <= {:hasta}', {
+            desde: `${anoFiltro}-01-01 00:00:00`, hasta: `${anoFiltro}-12-31 23:59:59`,
+          })
         : ''
       const r = await pb.collection('consultas').getList(pagina, POR_PAGINA, {
-        filter: `paciente = "${pacienteId}"` + filtroAno,
+        filter: pb.filter('paciente = {:pid}', { pid: pacienteId }) + filtroAno,
         sort: '-fecha',
         expand: 'medico,cita',
       })
@@ -64,15 +76,15 @@ export default function ConsultasPrevias({ pacienteId }) {
 
       const [dxR, recR, trR] = await Promise.all([
         pb.collection('diagnosticos').getList(1, 200, {
-          filter: ids.map(id => `consulta = "${id}"`).join(' || '),
+          filter: filtroPorIds('consulta', ids),
           sort: 'tipo',
         }).catch(() => ({ items: [] })),
         pb.collection('recetas').getList(1, 200, {
-          filter: ids.map(id => `consulta = "${id}"`).join(' || '),
+          filter: filtroPorIds('consulta', ids),
         }).catch(() => ({ items: [] })),
         citaIds.length > 0
           ? pb.collection('triage').getList(1, 100, {
-              filter: citaIds.map(id => `cita_id = "${id}"`).join(' || '),
+              filter: filtroPorIds('cita_id', citaIds),
               expand: 'enfermera_id',
             }).catch(() => ({ items: [] }))
           : Promise.resolve({ items: [] }),
@@ -123,14 +135,14 @@ export default function ConsultasPrevias({ pacienteId }) {
       <div className="card" style={{ padding: '0.75rem 1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)', fontWeight: 500 }}>
+            <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-2)', fontWeight: 500 }}>
               {totalItems} consulta{totalItems !== 1 ? 's' : ''}
             </span>
             <span style={{ color: 'var(--border)' }}>|</span>
-            <button onClick={expandirTodas} style={{ fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <button onClick={expandirTodas} style={{ fontSize: 'var(--fs-1)', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               Expandir todas
             </button>
-            <button onClick={colapsarTodas} style={{ fontSize: '0.75rem', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <button onClick={colapsarTodas} style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               Colapsar todas
             </button>
           </div>
@@ -140,7 +152,7 @@ export default function ConsultasPrevias({ pacienteId }) {
                 value={anoFiltro}
                 onChange={e => handleAno(e.target.value)}
                 className="input"
-                style={{ height: 32, padding: '0 0.5rem', fontSize: '0.75rem', width: 'auto' }}
+                style={{ height: 32, padding: '0 0.5rem', fontSize: 'var(--fs-1)', width: 'auto' }}
               >
                 <option value="todos">Todos los años</option>
                 {anos.map(a => <option key={a} value={a}>{a}</option>)}
@@ -149,7 +161,7 @@ export default function ConsultasPrevias({ pacienteId }) {
             <button
               onClick={() => navigate(`/consulta/nueva?paciente=${pacienteId}`)}
               className="btn btn-primary"
-              style={{ fontSize: '0.8125rem' }}
+              style={{ fontSize: 'var(--fs-2)' }}
             >
               <I.Plus width={13} height={13} /> Nueva Consulta
             </button>
@@ -166,7 +178,7 @@ export default function ConsultasPrevias({ pacienteId }) {
       ) : consultas.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3.5rem 1rem', color: 'var(--text-3)' }}>
           <I.Stethoscope width={36} height={36} style={{ opacity: 0.3, marginBottom: '0.75rem' }} />
-          <p style={{ fontSize: '0.875rem' }}>
+          <p style={{ fontSize: 'var(--fs-2)' }}>
             Sin consultas{anoFiltro !== 'todos' ? ` en ${anoFiltro}` : ''}
           </p>
         </div>
@@ -200,18 +212,18 @@ export default function ConsultasPrevias({ pacienteId }) {
             onClick={() => { setPagina(p => p - 1); setExpandidos(new Set()) }}
             disabled={pagina === 1}
             className="btn btn-outline"
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.875rem' }}
+            style={{ fontSize: 'var(--fs-1)', padding: '0.25rem 0.875rem' }}
           >
             ‹ Anterior
           </button>
-          <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
             {pagina} / {totalPaginas}
           </span>
           <button
             onClick={() => { setPagina(p => p + 1); setExpandidos(new Set()) }}
             disabled={pagina === totalPaginas}
             className="btn btn-outline"
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.875rem' }}
+            style={{ fontSize: 'var(--fs-1)', padding: '0.25rem 0.875rem' }}
           >
             Siguiente ›
           </button>

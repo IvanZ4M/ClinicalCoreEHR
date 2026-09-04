@@ -17,19 +17,55 @@
   --bg-inset:     oklch(93% 0.010 var(--accent-h));
 
   /* Borders */
-  --border:       oklch(88% 0.012 var(--accent-h));
+  /* --border pasó de 88% a 80%: a 88% daba 1.43:1 contra la tarjeta y los
+     bordes desaparecían al proyectar. A 80% da 1.86:1 y la estructura se ve. */
+  --border:       oklch(80% 0.012 var(--accent-h));
   --border-focus: oklch(55% 0.20 var(--accent-h));
 
   /* Text */
+  /* --text-3 pasó de 62% a 52%: a 62% daba 3.62:1 sobre tarjeta, por debajo del
+     mínimo AA de 4.5. A 52% da 5.48:1 y conserva la jerarquía frente a
+     --text-2 (7.71:1). Es el color de ~190 elementos de la interfaz. */
   --text:         oklch(16% 0.015 var(--accent-h));
   --text-2:       oklch(42% 0.018 var(--accent-h));
-  --text-3:       oklch(62% 0.014 var(--accent-h));
+  --text-3:       oklch(52% 0.014 var(--accent-h));
   --text-inv:     oklch(99% 0 0);
+
+  /* ── Escala tipográfica ──────────────────────────────────────────────────
+     Antes no existía: había ~300 tamaños escritos a mano en el JSX, 110 a 12px,
+     101 a 13px, 72 a 11px y 17 a 10px, contra solo 30 de 16px o más. Sin
+     jerarquía y, sobre todo, ilegible al proyectar.
+     Piso deliberado en 12px. --ui-scale multiplica todo de golpe: es lo que
+     hace posible el modo presentación. */
+  --ui-scale: 1;
+  --fs-1: calc(0.750rem  * var(--ui-scale));  /* 12px — etiquetas, metadatos   */
+  --fs-2: calc(0.875rem  * var(--ui-scale));  /* 14px — cuerpo secundario      */
+  --fs-3: calc(0.9375rem * var(--ui-scale));  /* 15px — cuerpo principal       */
+  --fs-4: calc(1.0625rem * var(--ui-scale));  /* 17px — títulos de tarjeta     */
+  --fs-5: calc(1.3125rem * var(--ui-scale));  /* 21px — títulos de sección     */
+  --fs-6: calc(1.6875rem * var(--ui-scale));  /* 27px — título de página       */
+  --fs-7: calc(2.1250rem * var(--ui-scale));  /* 34px — cifra protagonista     */
 
   /* Accent (primary blue) */
   --accent:       oklch(55% 0.20 var(--accent-h));
   --accent-dim:   oklch(55% 0.20 var(--accent-h) / 0.12);
   --accent-hover: oklch(50% 0.22 var(--accent-h));
+
+  /* ── Contrato de color semántico ─────────────────────────────────────────
+     En un expediente clínico el color es señal, no adorno. Si todo lleva
+     color, nada resalta — y lo que debe resaltar es la alerta de alergia
+     crítica, no un contador.
+
+       --accent  azul     acción, navegación y CONTEO NEUTRO (métricas)
+       --ok      verde    completado / dentro de rango
+       --warn    ámbar    requiere atención: paciente en sala, borrador pendiente
+       --danger  rojo     PELIGRO CLÍNICO o error: alergia crítica, valor fuera
+                          de rango, campo inválido. Nada más.
+       --violet  violeta  RESERVADO al estado "en consulta" de una cita.
+                          No usar para decorar.
+
+     Excepción: las paletas de gráficas (Reports) necesitan colores
+     categóricos para distinguir series; ahí el color no es semántico. */
 
   /* Semantic */
   --ok:           oklch(57% 0.16 155);
@@ -75,6 +111,15 @@
   --sidebar-w: 240px;
 }
 
+/* ─── Ancho de barra lateral ──────────────────────────────────────────────── */
+/* FIX: useTheme escribía html[data-sidebar] pero no existía ninguna regla que
+   lo leyera, así que las tres opciones de Configuración no hacían nada.
+   Se conservan las etiquetas en los tres anchos: un riel de solo iconos iría
+   en contra del objetivo de legibilidad del rediseño. */
+html[data-sidebar="rail"]    { --sidebar-w: 180px; }
+html[data-sidebar="regular"] { --sidebar-w: 240px; }
+html[data-sidebar="wide"]    { --sidebar-w: 288px; }
+
 /* ─── Color Tokens (Dark) ─────────────────────────────────────────────────── */
 html.dark {
   --bg:           oklch(14% 0.018 var(--accent-h));
@@ -82,12 +127,14 @@ html.dark {
   --bg-subtle:    oklch(20% 0.016 var(--accent-h));
   --bg-inset:     oklch(12% 0.015 var(--accent-h));
 
-  --border:       oklch(28% 0.018 var(--accent-h));
+  /* Mismo criterio que en claro: borde 28%→38% (1.29:1 → 1.89:1) y
+     terciario 52%→62% (3.42:1 → 5.17:1). */
+  --border:       oklch(38% 0.018 var(--accent-h));
   --border-focus: oklch(62% 0.22 var(--accent-h));
 
   --text:         oklch(94% 0.008 var(--accent-h));
   --text-2:       oklch(72% 0.012 var(--accent-h));
-  --text-3:       oklch(52% 0.012 var(--accent-h));
+  --text-3:       oklch(62% 0.012 var(--accent-h));
   --text-inv:     oklch(10% 0.010 var(--accent-h));
 
   --accent:       oklch(62% 0.22 var(--accent-h));
@@ -132,6 +179,28 @@ html[data-density="spacious"] {
   --density-6: 2rem;
 }
 
+/* ─── Modo presentación ─────────────────────────────────────────────────────
+   Respuesta directa a la crítica de los sinodales: al proyectar, la interfaz
+   escala de golpe y sube el contraste. Se activa con F9.
+   Se complementa con el zoom de Electron (webFrame.setZoomFactor) para que
+   también escalen las gráficas de Recharts, que dibujan SVG con medidas propias. */
+html[data-presentacion="on"] {
+  --ui-scale: 1.3;
+  /* En una sala iluminada el proyector no produce negro y los grises claros
+     desaparecen: el texto terciario sube al nivel del secundario. */
+  --text-3: oklch(42% 0.018 var(--accent-h));
+  --border: oklch(70% 0.014 var(--accent-h));
+}
+
+html.dark[data-presentacion="on"] {
+  --text-3: oklch(72% 0.012 var(--accent-h));
+  --border: oklch(48% 0.018 var(--accent-h));
+}
+
+/* Elementos que solo aportan adorno y estorban al proyectar.
+   Marcar con data-decorativo en el JSX. */
+html[data-presentacion="on"] [data-decorativo] { display: none !important; }
+
 /* ─── Typography classes ──────────────────────────────────────────────────── */
 .serif {
   font-family: 'Instrument Serif', Georgia, serif;
@@ -175,12 +244,25 @@ body {
   background: var(--bg-elev);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--fs-3);
   font-family: inherit;
   color: var(--text);
   transition: border-color 0.15s var(--ease-in-out), box-shadow 0.15s var(--ease-in-out);
 }
 .input::placeholder { color: var(--text-3); }
+
+/* VULN-FIX (ÁREA 9): un placeholder NUNCA debe poder confundirse con un dato
+   capturado. En los campos de signos vitales (CampoSigno) el input no usa la
+   clase .input, así que su placeholder heredaba el color y el peso del valor
+   real: "120/80" vacío se veía idéntico a "120/80" registrado, y el médico
+   podía guardar la consulta creyendo que ya tenía los signos vitales.
+   Regla global de respaldo para cualquier input o textarea de la app. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+  opacity: 1;
+}
 .input:focus {
   outline: none;
   border-color: var(--accent);
@@ -206,7 +288,7 @@ body {
   justify-content: center;
   gap: 0.375rem;
   padding: var(--density-3) var(--density-5);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   font-weight: 500;
   font-family: inherit;
   border-radius: var(--radius-md);
@@ -269,7 +351,7 @@ body {
   gap: 0.25rem;
   padding: 0.125rem 0.5rem;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 500;
   line-height: 1.5;
 }
@@ -284,7 +366,7 @@ body {
 /* ─── Component: .field-label ─────────────────────────────────────────────── */
 .field-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -298,7 +380,7 @@ body {
   align-items: center;
   gap: 0.375rem;
   padding: var(--density-2) var(--density-4);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   font-weight: 500;
   color: var(--text-3);
   border-bottom: 2px solid transparent;
@@ -326,7 +408,7 @@ body {
   gap: 0.625rem;
   padding: var(--density-3) var(--density-4);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
@@ -349,7 +431,7 @@ body {
   flex-shrink: 0;
   background: var(--accent-dim);
   color: var(--accent);
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
 }
 
 /* ─── Component: .modal-overlay ──────────────────────────────────────────── */

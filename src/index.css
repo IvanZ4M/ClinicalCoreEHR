@@ -1,3 +1,18 @@
+/* ─── Fuentes autoalojadas ────────────────────────────────────────────────── */
+/* FIX: index.html las cargaba desde Google Fonts por red. Sin internet —o con
+   una red que bloquee fonts.gstatic.com— las tres fallaban, la app caía a la
+   tipografía del sistema y el layout se recorría. Riesgo directo el día de la
+   defensa. Ahora viajan dentro del paquete. */
+@import "@fontsource/inter/300.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
 @import "tailwindcss";
 @import "./styles/system.css";
 
@@ -27,7 +42,7 @@ p { margin: 0; }
   background: var(--bg-elev);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--fs-3);
   color: var(--text);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -69,7 +84,7 @@ p { margin: 0; }
   align-items: center;
   gap: 6px;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.15s;

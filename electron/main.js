@@ -1,11 +1,21 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import log from 'electron-log/main.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isDev = process.argv.includes('--dev');
+
+// ── Logging ──────────────────────────────────────────────────────────────────
+log.transports.file.resolvePathFn = () =>
+  path.join(app.getPath('userData'), 'logs', 'clinicalcore.log');
+log.transports.file.maxSize = 10 * 1024 * 1024; // 10 MB
+
+process.on('uncaughtException', (error) => {
+  log.error('Error no manejado:', error);
+});
 
 let mainWindow;
 
@@ -16,7 +26,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
 
       // VULN-FIX (ÁREA 1): nodeIntegration desactivado — el renderer (React) no
       // tiene acceso a las APIs de Node.js. Sin esto, cualquier script en la
@@ -40,22 +50,45 @@ function createWindow() {
     },
   });
 
+  // Capture renderer errors and console output to the log file
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log.error(`[Renderer] did-fail-load: ${code} ${desc} — ${url}`);
+  });
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    log.error('[Renderer] process gone:', JSON.stringify(details));
+  });
+  mainWindow.webContents.on('console-message', (_e, level, message, line, source) => {
+    const lvl = ['verbose', 'info', 'warn', 'error'][level] ?? 'info';
+    log[lvl === 'verbose' ? 'debug' : lvl](`[Renderer] ${message} (${source}:${line})`);
+  });
+
+  // Modo presentación: el renderer pide un factor de zoom. Se valida el rango
+  // antes de aplicarlo — nunca se confía en el valor que llega por IPC.
+  ipcMain.removeAllListeners('ui:set-zoom');
+  ipcMain.on('ui:set-zoom', (_event, factor) => {
+    const f = Number(factor);
+    if (!Number.isFinite(f) || f < 0.5 || f > 3) {
+      log.warn(`[IPC] factor de zoom fuera de rango, ignorado: ${factor}`);
+      return;
+    }
+    mainWindow?.webContents.setZoomFactor(f);
+    log.info(`[IPC] zoom del renderer ajustado a ${f}`);
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
+    log.info('ClinicalCore EHR iniciado en modo desarrollo');
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 
-    // VULN-FIX (ÁREA 1): en producción, impedir que se abran las DevTools.
-    // Sin esto, cualquier usuario con acceso físico puede inspeccionar tokens
-    // de sesión, datos de pacientes en memoria y peticiones de red.
     mainWindow.webContents.on('devtools-opened', () => {
       mainWindow.webContents.closeDevTools();
     });
 
-    // VULN-FIX (ÁREA 1): deshabilitar "Inspeccionar elemento" en el menú
-    // contextual para que no haya atajo hacia las DevTools.
     mainWindow.webContents.on('context-menu', (e) => e.preventDefault());
+
+    log.info('ClinicalCore EHR iniciado — versión', app.getVersion());
   }
 
   mainWindow.on('closed', () => {

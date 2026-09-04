@@ -2,7 +2,7 @@
 
 **Sistema de Gestión de Expedientes Clínicos Electrónicos**
 
-Aplicación de escritorio para Windows orientada a la digitalización del ciclo completo de atención médica en consultorios y clínicas de primer nivel. Opera de forma **100% local**, sin conexión a Internet, lo que garantiza disponibilidad continua y confidencialidad de la información clínica.
+Aplicación de escritorio para Windows orientada a la digitalización del ciclo completo de atención médica en consultorios y clínicas de primer nivel. Opera **en la red local de la clínica y sin dependencia de Internet**: los datos nunca salen del consultorio y el sistema sigue funcionando aunque caiga el enlace externo.
 
 ---
 
@@ -15,7 +15,32 @@ Aplicación de escritorio para Windows orientada a la digitalización del ciclo 
 - **Registro de consultas** — Motivo, signos vitales, exploración física, diagnósticos CIE-10 y plan de tratamiento
 - **Prescripción digital** — Generación automática de recetas médicas en formato PDF
 - **Reportes y estadísticas** — Dashboard con top diagnósticos, pirámide poblacional y actividad clínica
-- **Modo offline** — Sin dependencia de servicios externos ni conexión a Internet
+- **Sin dependencia de Internet** — Ningún servicio en la nube ni tercero involucrado; todo el software y los datos residen en la red local de la clínica
+
+---
+
+## Modelo de despliegue
+
+ClinicalCore EHR es un sistema **en red local**, no monopuesto. Un equipo actúa como servidor y
+los demás se conectan a él por la LAN de la clínica.
+
+```
+Servidor (consultorio principal)   PocketBase + la aplicacion Electron
+       |
+       |   LAN / Wi-Fi de la clinica  ->  http://<IP-del-servidor>:8090
+       |
+       +-- Recepcion     1 equipo    Registro de pacientes y agenda
+       +-- Enfermeria    1 equipo    Triage y signos vitales
+       +-- Consultorios  N equipos   Consulta, diagnostico y receta
+```
+
+**No requiere conexión a Internet, pero sí requiere red local.** La distinción importa: el
+sistema no depende de servicios en la nube y la información clínica nunca sale de la clínica,
+pero tampoco es una aplicación aislada en una sola computadora — necesita que los equipos se
+vean entre sí en la red.
+
+El procedimiento completo de instalación —IP estática, PocketBase como servicio de Windows,
+firewall y respaldos— está en **[README-DESPLIEGUE.md](README-DESPLIEGUE.md)**.
 
 ---
 
@@ -72,14 +97,18 @@ npm run dev
 ### Generar instalador para Windows
 
 ```bash
-# Compilar e instalar
-npm run build
+# Compilar la interfaz y generar el instalador en un solo paso
 npm run dist
 
-# Los instaladores se generan en /dist:
-# - Clinical Core EHR Setup X.X.X.exe  (instalador NSIS)
-# - Clinical Core EHR X.X.X.exe        (ejecutable portátil)
+# El instalador se genera en /dist-electron:
+#   ClinicalCore EHR Setup X.X.X.exe   (instalador NSIS)
 ```
+
+`npm run dist` ya ejecuta `vite build` internamente; no hace falta `npm run build` antes.
+`npm run build:electron` es un alias del mismo comando.
+
+> El instalador **no incluye PocketBase**. En la clínica, la base de datos se instala aparte
+> como servicio de Windows: ver [README-DESPLIEGUE.md](README-DESPLIEGUE.md).
 
 ---
 
@@ -91,8 +120,15 @@ Al ejecutar por primera vez, PocketBase aplica automáticamente las migraciones 
 
 ## Documentación
 
-- [Manual de Usuario](docs/ClinicalCoreEHR_Manual_Usuario.pdf)
-- [Manual Técnico](docs/ClinicalCoreEHR_Manual_Tecnico.pdf)
+En el repositorio:
+
+- **[Guía de instalación en la clínica](README-DESPLIEGUE.md)** — despliegue en red, paso a paso
+- **[Checklist pre-producción](CHECKLIST-PRODUCCION.md)** — verificaciones antes de poner el sistema en uso
+
+Fuera del repositorio, entregados como documentos aparte:
+
+- Manual de Usuario
+- Manual Técnico
 
 ---
 

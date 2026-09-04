@@ -1,4 +1,5 @@
 import pb from '../lib/pb'
+import { logError } from '../lib/logger'
 
 /**
  * Creates a new appointment record.
@@ -30,10 +31,18 @@ export async function getSlotsDisponibles(medicoId, fecha) {
   let citasDelDia = []
   try {
     const r = await pb.collection('citas').getFullList({
-      filter: `medico = "${medicoId}" && fecha_hora >= "${inicio}" && fecha_hora <= "${fin}" && estado != "cancelada" && estado != "no_acudio"`,
+      filter: pb.filter(
+        'medico = {:med} && fecha_hora >= {:ini} && fecha_hora <= {:fin} && estado != "cancelada" && estado != "no_acudio"',
+        { med: medicoId, ini: inicio, fin }
+      ),
     })
     citasDelDia = r
-  } catch { /* fail gracefully — return all slots as available */ }
+  } catch (err) {
+    // OJO: si la consulta falla se devuelven todos los horarios como libres,
+    // lo que puede provocar una cita duplicada. Queda registrado para poder
+    // detectarlo; a futuro convendría propagar el error a la interfaz.
+    logError('citasService.getSlotsDisponibles', err)
+  }
 
   const ocupadas = new Set(
     citasDelDia.map(c => {

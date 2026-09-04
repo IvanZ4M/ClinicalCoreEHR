@@ -1,12 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const LS = {
-  theme:   'cc.theme',
-  accentH: 'cc.accentH',
-  density: 'cc.density',
-  sidebar: 'cc.sidebar',
-  radius:  'cc.radius',
+  theme:        'cc.theme',
+  accentH:      'cc.accentH',
+  density:      'cc.density',
+  sidebar:      'cc.sidebar',
+  radius:       'cc.radius',
+  presentacion: 'cc.presentacion',
 }
+
+// Factor de zoom de Electron en modo presentación. Escala TODO el renderer,
+// incluidas las gráficas de Recharts, que dibujan SVG con medidas propias y
+// no responden a --ui-scale.
+const ZOOM_PRESENTACION = 1.15
 
 function read(key, fallback) {
   try { return localStorage.getItem(key) ?? fallback }
@@ -32,6 +38,9 @@ export function useTheme() {
 
   /* ── radius: 4 | 8 | 12 | 16 (px) ───────────────────────────────── */
   const [radius, setRadiusState] = useState(() => Number(read(LS.radius, 8)))
+
+  /* ── presentacion: modo proyector (F9) ──────────────────────────── */
+  const [presentacion, setPresentacionState] = useState(() => read(LS.presentacion, 'off') === 'on')
 
   /* Resolve effective dark mode */
   const isDark = theme === 'dark' ||
@@ -66,6 +75,28 @@ export function useTheme() {
     persist(LS.radius, radius)
   }, [radius])
 
+  /* Modo presentación: atributo en <html> + zoom del renderer de Electron */
+  useEffect(() => {
+    document.documentElement.dataset.presentacion = presentacion ? 'on' : 'off'
+    persist(LS.presentacion, presentacion ? 'on' : 'off')
+    // En el navegador (dev) electronAPI no existe: solo aplica --ui-scale.
+    try {
+      window.electronAPI?.send('ui:set-zoom', presentacion ? ZOOM_PRESENTACION : 1)
+    } catch { /* sin puente de Electron: el escalado CSS ya funciona por sí solo */ }
+  }, [presentacion])
+
+  /* F9 alterna el modo presentación desde cualquier pantalla */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'F9') {
+        e.preventDefault()
+        setPresentacionState(v => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   /* Listen for system preference changes when theme === 'system' */
   useEffect(() => {
     if (theme !== 'system') return
@@ -88,11 +119,15 @@ export function useTheme() {
     setThemeState(prev => prev === 'dark' ? 'light' : 'dark')
   }, [])
 
+  const setPresentacion   = useCallback((v) => setPresentacionState(Boolean(v)), [])
+  const togglePresentacion = useCallback(() => setPresentacionState(v => !v), [])
+
   return {
     theme, setTheme, isDark, toggleDark,
     accentH, setAccentH,
     density, setDensity,
     sidebar, setSidebar,
     radius, setRadius,
+    presentacion, setPresentacion, togglePresentacion,
   }
 }

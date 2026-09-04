@@ -1,24 +1,26 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useRouteError } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useRouteError } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ROLES } from './lib/roles'
 import RoleGuard from './components/guards/RoleGuard'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import DashboardEnfermera from './pages/DashboardEnfermera'
-import DashboardRecepcionista from './pages/DashboardRecepcionista'
-import DashboardAdmin from './pages/DashboardAdmin'
-import Patients from './pages/Patients'
-import Appointments from './pages/Appointments'
-import PatientDetail from './pages/PatientDetail'
-import NewConsultation from './pages/NewConsultation'
-import Reports from './pages/Reports'
-import Users from './pages/Users'
-import Settings from './pages/Settings'
 import Unauthorized from './pages/Unauthorized'
-import EnfermeriaQueue from './pages/EnfermeriaQueue'
-import EnfermeriaValoracion from './pages/EnfermeriaValoracion'
+
+const Dashboard             = lazy(() => import('./pages/Dashboard'))
+const DashboardEnfermera    = lazy(() => import('./pages/DashboardEnfermera'))
+const DashboardRecepcionista = lazy(() => import('./pages/DashboardRecepcionista'))
+const DashboardAdmin        = lazy(() => import('./pages/DashboardAdmin'))
+const Patients              = lazy(() => import('./pages/Patients'))
+const Appointments          = lazy(() => import('./pages/Appointments'))
+const PatientDetail         = lazy(() => import('./pages/PatientDetail'))
+const NewConsultation       = lazy(() => import('./pages/NewConsultation'))
+const Reports               = lazy(() => import('./pages/Reports'))
+const Users                 = lazy(() => import('./pages/Users'))
+const Settings              = lazy(() => import('./pages/Settings'))
+const EnfermeriaQueue       = lazy(() => import('./pages/EnfermeriaQueue'))
+const EnfermeriaValoracion  = lazy(() => import('./pages/EnfermeriaValoracion'))
 
 // ── Spinner de carga inicial ─────────────────────────────────────────────────
 function Spinner() {
@@ -26,7 +28,7 @@ function Spinner() {
     <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spinCw 0.8s linear infinite', margin: '0 auto 12px' }} />
-        <p style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>Cargando sistema...</p>
+        <p style={{ color: 'var(--text-3)', fontSize: 'var(--fs-2)' }}>Cargando sistema...</p>
       </div>
     </div>
   )
@@ -66,12 +68,12 @@ function ErrorPagina() {
   return (
     <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
-        <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</p>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>Error en la página</h2>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontFamily: 'var(--font-mono)', textAlign: 'left', wordBreak: 'break-all' }}>
+        <p style={{ fontSize: 'var(--fs-7)', marginBottom: '1rem' }}>⚠️</p>
+        <h2 style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>Error en la página</h2>
+        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontFamily: 'var(--font-mono)', textAlign: 'left', wordBreak: 'break-all' }}>
           {error?.message || String(error)}
         </p>
-        <button onClick={() => navigate('/')} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+        <button onClick={() => navigate('/')} className="btn btn-primary" style={{ fontSize: 'var(--fs-2)' }}>
           Volver al Panel
         </button>
       </div>
@@ -95,6 +97,7 @@ export default function App() {
               element={
                 <RutaProtegida>
                   <Layout>
+                    <Suspense fallback={<Spinner />}>
                     <Routes>
                       {/* Dashboard dinámico por rol */}
                       <Route path="/" element={<DashboardPorRol />} errorElement={<ErrorPagina />} />
@@ -161,6 +164,7 @@ export default function App() {
                       {/* Cualquier ruta desconocida → dashboard del rol */}
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
+                    </Suspense>
                   </Layout>
                 </RutaProtegida>
               }
