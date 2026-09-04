@@ -34,3 +34,11 @@ dist-electron
 
 # Respaldos de PocketBase: pesados y con datos de pacientes
 pocketbase/pb_data/backups/
+
+# Base de datos de PocketBase: expedientes de pacientes. NUNCA al repositorio.
+# Incluye los -wal/-shm de SQLite, que tambien contienen datos.
+pocketbase/pb_data/
+
+# Base de datos de PocketBase: expedientes de pacientes. NUNCA al repositorio.
+# Incluye los -wal/-shm de SQLite, que tambien contienen datos.
+pocketbase/pb_data/
