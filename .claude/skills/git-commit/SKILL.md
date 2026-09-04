@@ -137,12 +137,11 @@ entienda el criterio, no solo el cambio.
   lo escrito"*.
 - Si algo quedó sin probar, escríbelo en el commit. No lo escondas.
 
-Cierra **siempre** con:
-
-```
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: <URL de la sesion actual>
-```
+**No anadas ningun trailer de atribucion.** Nada de `Co-Authored-By:`, nada de
+`Claude-Session:`, ninguna linea que mencione a Claude, Anthropic o la sesion. El mensaje
+termina en su ultima linea de contenido. Es una decision explicita del autor para este
+proyecto: el historial se muestra en la defensa de titulacion. Si algo los anade igualmente,
+el hook `commit-msg` los borra — ver "Atribucion en los commits" en `CLAUDE.md`.
 
 Usa `git commit -F -` con un heredoc `<<'MSG'` (comillas simples: evita que la shell
 expanda `$` y backticks del mensaje).

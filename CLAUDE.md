@@ -79,6 +79,54 @@ Aplicadas por migración, no en el cliente. Lo esencial:
 - Fechas a PocketBase en formato `YYYY-MM-DD HH:mm:ss` (ver `citasService.createCita`).
 - Nunca romper `HashRouter` ni introducir `nodeIntegration` en Electron.
 
+### Atribución en los commits
+
+**Los mensajes de commit no llevan trailers de atribución de IA.** Ni `Co-Authored-By: Claude`,
+ni `Claude-Session:`. Decisión del autor: el historial se muestra en la defensa de titulación.
+No es una afirmación sobre cómo se desarrolló el proyecto — Claude Code se sigue usando con
+normalidad — sino sobre qué aparece en la portada del repositorio.
+
+El motivo concreto: GitHub **sí** empareja el trailer `Co-Authored-By` con la cuenta oficial
+`claude` de Anthropic y la muestra con avatar en la barra lateral de contribuidores. Ojo, la
+API REST `/repos/.../contributors` **no** lo refleja: devuelve un solo contribuidor. El dato
+bueno está en `github.com/<owner>/<repo>/graphs/contributors-data`, que es lo que alimenta la
+interfaz. No dar por buena la API para esto.
+
+Hay **tres capas**, y hacen falta las tres:
+
+1. **`~/.claude/settings.json`** (fuera del repositorio, es preferencia personal):
+   ```json
+   "attribution": { "commit": "", "pr": "" }
+   ```
+   Suprime el `Co-Authored-By`. **No suprime el `Claude-Session`** — bug conocido: esa línea se
+   inyecta por una vía que no lee la configuración local.
+
+2. **`.claude/skills/git-commit/SKILL.md`**, sección 5: instruye explícitamente a no escribir
+   ningún trailer. Hace falta porque la skill antes ordenaba lo contrario, y una instrucción
+   negativa explícita es más fiable que el silencio.
+
+3. **El hook `commit-msg`**, que es la garantía real porque git lo ejecuta siempre.
+
+> ⚠️ **Los hooks viven en `.git/hooks/` y NO se versionan.** Un clon nuevo no lo tiene y los
+> trailers vuelven sin avisar. Si clonas el repositorio, recrea el archivo
+> `.git/hooks/commit-msg` con este contenido y dale permisos con `chmod +x`:
+
+```sh
+#!/bin/sh
+msg="$1"
+tmp="$msg.sinatribucion"
+grep -viE '^[[:space:]]*(Co-Authored-By:[[:space:]]*Claude|Claude-Session:|Generated with \[Claude)' "$msg" > "$tmp"
+awk '{l[NR]=$0} END{n=NR; while(n>0 && l[n]~/^[[:space:]]*$/) n--; for(i=1;i<=n;i++) print l[i]}' "$tmp" > "$msg"
+rm -f "$tmp"
+```
+
+Solo filtra `Co-Authored-By:` seguido de `Claude`: un co-autor humano se conserva. El `awk`
+recorta las líneas en blanco que quedan al final tras borrar los trailers.
+
+Comprobar con `git log -1 --format=%B` después de commitear. Esto corta el problema **hacia
+adelante**; los 41 commits que ya los llevan siguen igual hasta la reescritura de historial
+pendiente, agendada junto con la de `pocketbase.exe` (Asana `1218178974697650`).
+
 ## Estado actual (3 septiembre 2026) — leer antes de tocar código
 
 Rama activa `feat/ui-redesign`, en `a2e5b0d`, **commiteada y empujada a `origin`**.
