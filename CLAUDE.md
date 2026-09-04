@@ -50,7 +50,7 @@ npm run setup <IP>     # genera .env.production apuntando al servidor de la clí
 - `recetas` — consulta, paciente, medico, medicamentos, indicaciones, pdf
 - `notificaciones` — usuario_destino, tipo, mensaje, cita, leida
 - `audit_log` — usuario_id, accion, recurso, recurso_id (solo lectura del admin;
-  **NO es inmutable pese a lo que se creía** — ver "Estado actual")
+  inmutable desde la migración `1779000000`: UPDATE y DELETE devuelven 403 incluso al admin)
 
 Flujo clínico: recepción agenda cita → enfermera hace triage (`/enfermeria`) → médico abre
 consulta (`/consulta/nueva?paciente=&cita=`) → diagnósticos CIE-10 + receta PDF →
@@ -79,22 +79,32 @@ Aplicadas por migración, no en el cliente. Lo esencial:
 - Fechas a PocketBase en formato `YYYY-MM-DD HH:mm:ss` (ver `citasService.createCita`).
 - Nunca romper `HashRouter` ni introducir `nodeIntegration` en Electron.
 
-## Estado actual (31 agosto 2026) — leer antes de tocar código
+## Estado actual (3 septiembre 2026) — leer antes de tocar código
 
-Rama activa `feat/ui-redesign`. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
+Rama activa `feat/ui-redesign`, en `0e68d63`, **commiteada y empujada a `origin`**.
+`main` en `dc7afb0`. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
 Plan en Asana, proyecto "Plan Semanal" (`1217838653061608`), tareas con prefijo `[CCEHR]`.
 La skill `.claude/skills/asana-sync/` mantiene ese tablero sincronizado.
 
-### ⚠️ Lo primero: NADA de agosto está commiteado
+### ⚠️ Lo primero: el historial se reescribió el 3 de septiembre de 2026
 
-El último commit de `feat/ui-redesign` es `68cf872`, del **14 de mayo de 2026**. Todo el trabajo
-de los días 29–31 de agosto vive **solo en el árbol de trabajo**: 44 archivos modificados
-(+1166 / −598) más 6 rutas sin seguimiento (`.claude/`, `CLAUDE.md`, `scripts/seed-demo.js`,
-`src/lib/edad.js`, `src/lib/logger.js` y las dos migraciones nuevas de RLS).
+**Todos los SHA anteriores a esa fecha dejaron de existir.** El repositorio de GitHub se borró
+y se recreó desde un historial filtrado. Cualquier referencia vieja que encuentres en notas,
+tarjetas de Asana o conversaciones previas (`68cf872`, `9a984f6`, `fe1b330`, `b6b0657`…) ya no
+resuelve contra este repositorio. El motivo está en "Incidente de seguridad", más abajo.
 
-Consecuencia: un `git checkout` descuidado o un disco muerto borra las 26 tareas cerradas.
-`git diff main..feat/ui-redesign` **no** refleja este trabajo — muestra el rediseño de mayo.
-**Commitear antes de cualquier otra cosa.**
+| Antes | Ahora |
+|---|---|
+| `9a984f6` — tip de `feat/ui-redesign` | `a442e20` |
+| `fe1b330` — tip de `main` | `dc7afb0` |
+| `c2c9e55` — "Cuarto Commit" | podado; solo tocaba los binarios de `pb_data` |
+
+El trabajo de los días 29–31 de agosto **sí está commiteado y empujado**: 7 commits del 31/08
+más `0e68d63` del 03/09. `feat/ui-redesign` sigue **sin fusionar a `main`** — esa fusión es la
+tarea abierta más urgente (Asana `1217984345164995`).
+
+`pocketbase/pb_data/` ya no está en el repositorio ni en el historial, y el `.gitignore` ignora
+el directorio completo. La base local de trabajo sigue en su sitio, sin versionar.
 
 ### ✅ Resuelto (26 tareas confirmadas en Asana, 29–30 agosto)
 
@@ -139,6 +149,85 @@ sin commitear**.
 > ⚠️ **Los datos de demo son relativos a la fecha.** `seed-demo.js` debe ejecutarse **la mañana
 > de la defensa** o la agenda del día abre vacía. Requiere `PB_SU_EMAIL` y `PB_SU_PASS`.
 
+## Incidente de seguridad — exposición de `pb_data` (3 septiembre 2026)
+
+Redactada para poder responderla en la defensa. Todo lo que sigue es verificable en el
+historial de git y en los respaldos de `C:\respaldo-ccehr\`.
+
+### Qué se expuso
+
+`pocketbase/pb_data/data.db` —la base SQLite completa de PocketBase— estuvo versionada en git
+desde el primer commit del proyecto y publicada en un repositorio **público** de GitHub.
+Contenía:
+
+- Las tablas `pacientes`, `consultas`, `diagnosticos`, `recetas`, `triage` y `usuarios`.
+- Datos personales reales del autor y de un familiar, capturados como pacientes de prueba antes
+  de que existiera el generador sintético: 18 correos y 120 cadenas de 10 dígitos compatibles
+  con teléfonos.
+- La tabla `_superusers`, con 7 hashes bcrypt.
+- Los write-ahead logs `data.db-wal` y `auxiliary.db-wal`, que pueden contener transacciones
+  todavía no volcadas a la base.
+
+Era descargable sin autenticación: una petición anónima a
+`raw.githubusercontent.com/.../main/pocketbase/pb_data/data.db` devolvía `HTTP 200` y 253 952 bytes.
+
+**No** se commitearon nunca `pb_data/storage/` (adjuntos, fotos de pacientes) ni
+`pb_data/backups/`: se verificó que esas rutas no aparecen en ninguno de los 44 commits del
+historial original.
+
+### Cómo se detectó — 3 de septiembre de 2026
+
+Al reanudar el trabajo, `CLAUDE.md` afirmaba que nada de agosto estaba commiteado mientras el
+repositorio mostraba lo contrario. Al resolver esa contradicción con diagnóstico en crudo
+—`git log`, `git status -sb`, `git ls-remote`, `git log --all -- 'pocketbase/pb_data/*'`,
+`git check-ignore`— apareció que la base estaba en el historial y que `check-ignore` devolvía
+código 1: no estaba ignorada.
+
+**No lo detectó ninguna herramienta automática.** No había escaneo de secretos, ni hook de
+pre-commit, ni revisión de qué archivos entraban al repositorio. Lo detectó una verificación
+manual disparada por una inconsistencia en la documentación.
+
+### Qué se hizo, en este orden
+
+1. **Respaldo** — clon `--mirror` y copia completa del proyecto en `C:\respaldo-ccehr\`.
+2. **Repositorio a privado**, para detener la exposición en minutos.
+3. **Rotación de credenciales** — superusuario de PocketBase y las 5 cuentas de `usuarios`.
+   Primero esto: los hashes ya eran públicos y podían haber sido copiados.
+4. **Reescritura del historial** con `git-filter-repo --invert-paths --path pocketbase/pb_data`,
+   sobre un clon nuevo del respaldo. Filtro por **directorio**, no por archivo: uno a nivel de
+   archivo habría dejado pasar los `-wal`.
+5. **Borrado y recreación del repositorio en GitHub.** Una reescritura con `push --force` deja
+   los objetos viejos accesibles por SHA hasta que Soporte los purga; borrar el repositorio no.
+6. **Reapuntado de la carpeta de trabajo** con `git reset --mixed`, que mueve la rama sin tocar
+   el árbol de trabajo y conserva la base local.
+7. **Verificación** — `git log --all -- 'pocketbase/pb_data/*'` vacío, los blobs concretos
+   buscados por SHA ya no existen, y `raw.githubusercontent.com` devuelve 404 en ambas ramas
+   desde una sesión sin autenticar.
+
+Coste: un commit podado (`c2c9e55`, "Cuarto Commit"), que tocaba únicamente los dos binarios de
+la base y ninguna línea de código. Todos los SHA del proyecto cambiaron.
+
+### Qué cambió para que no se repita
+
+- El `.gitignore` ignora `pocketbase/pb_data/` **completo**, no archivos sueltos.
+- La skill `.claude/skills/git-commit/` ahora obliga a revisar `git ls-files` del **historial**,
+  no solo del árbol de trabajo, y a comprobar la visibilidad del repositorio antes de empujar.
+  Ese fue exactamente el fallo: vigilaba lo que estaba a punto de entrar, no lo que ya estaba
+  dentro.
+- Los datos de demostración se generan con `scripts/seed-demo.js` y son íntegramente sintéticos.
+
+### Riesgo residual, dicho con honestidad
+
+Borrar el repositorio elimina los datos de los servidores de GitHub, pero **no** del equipo de
+quien lo hubiera clonado mientras era público. Las credenciales ya no sirven porque se rotaron.
+Lo que no se puede deshacer es la exposición de los datos de contacto, si alguien llegó a
+descargarlos. El repositorio no tenía forks y no había tenido difusión, de modo que la
+probabilidad es baja — pero baja no es cero, y esa es la respuesta correcta.
+
+Lección que se traslada al despliegue en la clínica: **la base de un EHR no debe vivir nunca en
+el mismo sitio que el código**. Es el mismo principio que sostiene los pendientes de cifrado en
+reposo y de respaldos fuera del equipo, más abajo.
+
 ## Pendientes críticos para la defensa
 
 ### 1. La receta PDF nunca se archiva en el expediente
@@ -180,7 +269,7 @@ luego enlace de descarga en `ConsultaPreviaCard`. Asana `1217971750122965`, venc
 
 ### Deuda pendiente (sin cambios desde mayo)
 
-- `pb_data/*.db` versionado en git y **ausente de `.gitignore`** (verificado). Sacarlo.
+- ~~`pb_data/*.db` versionado en git~~ — **resuelto el 03/09/2026**, ver "Incidente de seguridad".
 - Falta `pocketbase/pb_public/` — el acceso por `http://IP:8090` que promete
   `README-DESPLIEGUE.md` no funciona.
 - **El Manual Técnico describe un sistema monopuesto** ("conexión de red: no requerida") pero el
