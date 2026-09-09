@@ -6,6 +6,7 @@ import { useTriagePaciente } from '../hooks/useTriage'
 import { useAuth } from '../context/AuthContext'
 import { validators } from '../lib/validators'
 import { formatearEdad } from '../lib/edad'
+import { logError, logWarn } from '../lib/logger'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
@@ -239,6 +240,46 @@ export default function NewConsultation() {
     ))
   }
 
+  // Archiva la receta en el expediente con UNA SOLA petición multipart: el
+  // registro clínico y el PDF viajan juntos en el mismo POST.
+  //
+  // Crear el registro primero y subir el archivo después serían dos peticiones,
+  // y la segunda puede fallar: quedaría una receta huérfana con `pdf` vacío —
+  // exactamente el bug que este cambio corrige, pero en silencio y sin forma de
+  // distinguirlo de una receta legítima. Con un POST único no hay estado
+  // intermedio: o queda completa, o no queda nada.
+  //
+  // La descarga local ya ocurrió antes de llamar aquí (ver generarRecetaPDF):
+  // pase lo que pase con la red, el médico conserva el papel.
+  const archivarReceta = async (consultaId, blob, nombreArchivo, planTexto) => {
+    const campos = {
+      consulta:     consultaId,
+      paciente:     pacienteId,
+      medico:       usuario.id,
+      medicamentos: JSON.stringify(medicamentos),
+      indicaciones: planTexto ?? '',
+    }
+    try {
+      const fd = new FormData()
+      for (const [clave, valor] of Object.entries(campos)) fd.append(clave, valor)
+      fd.append('pdf', new File([blob], nombreArchivo, { type: 'application/pdf' }))
+      await pb.collection('recetas').create(fd)
+    } catch (err) {
+      logWarn('archivarReceta.conPDF', err)
+      // Segundo intento sin el archivo. Si lo que falló fue la subida en sí
+      // (tamaño, disco del servidor, timeout del multipart), el registro
+      // clínico —medicamentos e indicaciones, que es lo que alimenta el
+      // expediente— todavía puede salvarse.
+      try {
+        await pb.collection('recetas').create(campos)
+        toast.warning('La receta quedó registrada, pero el PDF no se pudo archivar. Conserva la copia descargada.')
+      } catch (err2) {
+        logError('archivarReceta.sinPDF', err2)
+        toast.error('La receta NO quedó registrada en el expediente. Conserva el PDF descargado y vuelve a capturarla.')
+      }
+    }
+  }
+
   const generarRecetaPDF = async (consultaId, planTexto) => {
     if (!paciente || !usuario) return
     setGenerandoPDF(true)
@@ -349,16 +390,18 @@ export default function NewConsultation() {
       const timestamp = Date.now()
       const idOpaco   = (consultaId || 'borrador').substring(0, 8)
       const nombreArchivo = `Receta_${idOpaco}_${timestamp}.pdf`
+
+      // El blob se construye y la descarga local se dispara ANTES de tocar la
+      // red. Es deliberado: si PocketBase está caído, el médico se queda igual
+      // con el papel y el paciente sale del consultorio con su receta.
+      const blob = doc.output('blob')
       doc.save(nombreArchivo)
 
       if (consultaId) {
-        await pb.collection('recetas').create({
-          consulta: consultaId, paciente: pacienteId, medico: usuario.id,
-          medicamentos: JSON.stringify(medicamentos), indicaciones: planTexto,
-        })
+        await archivarReceta(consultaId, blob, nombreArchivo, planTexto)
       }
     } catch (err) {
-      console.error('Error generando PDF:', err)
+      logError('generarRecetaPDF', err)
       setError('Error al generar el PDF: ' + err.message)
     } finally { setGenerandoPDF(false) }
   }

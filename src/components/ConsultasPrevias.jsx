@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import pb from '../lib/pb'
-import { logWarn } from '../lib/logger'
+import { logWarn, logError } from '../lib/logger'
 import ConsultaPreviaCard from './ConsultaPreviaCard'
 import { I } from './icons'
 
@@ -123,6 +124,32 @@ export default function ConsultasPrevias({ pacienteId }) {
     })
   }, [])
 
+  // VULN-FIX (ÁREA 10): el campo `pdf` es `protected` (migración 1779000002),
+  // así que la URL del archivo solo responde acompañada de un token de vida
+  // corta. Se pide EN EL MOMENTO DEL CLIC y no se guarda en ningún estado:
+  // pedirlo al cargar la lista serviría enlaces ya caducados, y almacenarlo
+  // reintroduciría el enlace compartible que la migración vino a cerrar.
+  //
+  // `download: 1` hace que PocketBase responda con Content-Disposition:
+  // attachment. Es lo que dispara el diálogo de guardado de Electron en lugar
+  // de abrir una ventana nueva con el visor de PDF; el atributo `download` del
+  // ancla no basta porque la URL es de otro origen.
+  const descargarReceta = useCallback(async (receta) => {
+    try {
+      const token = await pb.files.getToken()
+      const url = pb.files.getURL(receta, receta.pdf, { token, download: 1 })
+      const a = document.createElement('a')
+      a.href = url
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (err) {
+      logError('descargarReceta', err)
+      toast.error('No se pudo descargar la receta. Revisa la conexión con el servidor.')
+    }
+  }, [])
+
   const expandirTodas  = () => setExpandidos(new Set(consultas.map(c => c.id)))
   const colapsarTodas  = () => setExpandidos(new Set())
 
@@ -200,6 +227,7 @@ export default function ConsultasPrevias({ pacienteId }) {
               triage={trPorConsulta[c.id]         || null}
               expandido={expandidos.has(c.id)}
               onToggle={() => toggle(c.id)}
+              onDescargarReceta={descargarReceta}
             />
           ))}
         </div>

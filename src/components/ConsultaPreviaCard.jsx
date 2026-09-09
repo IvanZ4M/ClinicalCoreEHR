@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { I } from './icons'
 
 const TIPO_CITA_LABEL = {
@@ -58,7 +58,19 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
   triage,
   expandido,
   onToggle,
+  onDescargarReceta,
 }) {
+  // Solo el estado visual del botón: el token y la URL los resuelve
+  // ConsultasPrevias, que es quien tiene el cliente de PocketBase.
+  const [descargando, setDescargando] = useState(false)
+
+  const handleDescargar = async () => {
+    if (descargando) return
+    setDescargando(true)
+    try { await onDescargarReceta(receta) }
+    finally { setDescargando(false) }
+  }
+
   const sv = (() => {
     try {
       const raw = consulta.signos_vitales
@@ -226,12 +238,33 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
             )}
 
             {/* Medicamentos */}
-            {medicamentos.length > 0 && (
+            {(medicamentos.length > 0 || receta?.pdf) && (
               <div>
-                <SeccionHeader
-                  icon={<I.Pill width={13} height={13} style={{ color: 'var(--text-3)' }} />}
-                  label="Medicamentos Prescritos"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <SeccionHeader
+                    icon={<I.Pill width={13} height={13} style={{ color: 'var(--text-3)' }} />}
+                    label="Medicamentos Prescritos"
+                  />
+                  {/* La receta archivada solo existe desde el arreglo del campo
+                      `pdf`; las consultas anteriores no muestran botón. */}
+                  {receta?.pdf && onDescargarReceta && (
+                    <button
+                      onClick={handleDescargar}
+                      disabled={descargando}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3125rem',
+                        fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--accent)',
+                        background: 'none', border: 'none', flexShrink: 0,
+                        cursor: descargando ? 'default' : 'pointer',
+                        opacity: descargando ? 0.6 : 1,
+                        padding: 0, marginBottom: '0.625rem',
+                      }}
+                    >
+                      <I.Download width={13} height={13} />
+                      {descargando ? 'Preparando…' : 'Descargar receta (PDF)'}
+                    </button>
+                  )}
+                </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {medicamentos.map((med, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: 'var(--fs-2)', color: 'var(--text-2)' }}>

@@ -64,6 +64,13 @@ Aplicadas por migración, no en el cliente. Lo esencial:
   (`consulta.medico = @request.auth.id`), desde la migración `1779000000` (29/08/2026).
 - La `recepcionista` no ve `diagnosticos` ni `recetas` (migración `1779000001`). La `enfermera`
   sí: necesita crónicos y medicación vigente para el triage.
+- El PDF de la receta (`recetas.pdf`) es un campo `file` con **`protected: true`** desde la
+  migración `1779000002` (09/09/2026). La URL del archivo **no responde sin un token de acceso**
+  emitido por `pb.files.getToken()` para el usuario autenticado. Sin esto, un campo `file` se
+  sirve en abierto y se salta todo el RLS de arriba: el riesgo no es que la URL se adivine
+  —PocketBase le añade sufijo aleatorio— sino que es **compartible y persistente** (historial,
+  carpeta de descargas, un correo reenviado). El token se pide en el momento del clic y no se
+  guarda; guardarlo reintroduciría el enlace compartible.
 - ⚠️ **`deleteRule: ""` significa que TODOS pueden borrar, no que nadie puede.** Para prohibirlo
   hay que poner `null` (solo superusuarios). `pacientes`, `consultas`, `diagnosticos`, `recetas`
   y `audit_log` ya están en `null`.
@@ -202,6 +209,35 @@ sin commitear**.
 > ⚠️ **Los datos de demo son relativos a la fecha.** `seed-demo.js` debe ejecutarse **la mañana
 > de la defensa** o la agenda del día abre vacía. Requiere `PB_SU_EMAIL` y `PB_SU_PASS`.
 
+### ✅ Resuelto el 9 de septiembre — la receta PDF ya se archiva (Asana `1217971750122965`)
+
+El campo `recetas.pdf` era letra muerta: `doc.save()` solo descargaba al equipo del médico y el
+registro se creaba con `pdf: ""`. Confirmado antes de tocar nada: **0 archivos en
+`pb_data/storage/`** y ninguna cadena `.pdf` en toda la base.
+
+- **`archivarReceta()` en `NewConsultation.jsx`**: el PDF se genera como `Blob`, se descarga en
+  local **antes de tocar la red** —si PocketBase está caído, el paciente sale igual con su
+  papel— y el registro más el archivo viajan en **un solo POST multipart**.
+- ⚠️ **Se descartó el patrón crear-y-luego-actualizar** que proponía la nota original. Son dos
+  peticiones y la segunda puede fallar, dejando una receta huérfana con `pdf: ""` — el mismo bug
+  que este arreglo corrige, pero en silencio y sin forma de distinguirlo de una receta legítima.
+  Con un POST único no hay estado intermedio. **No volver a partirlo en dos.**
+- **Reintento sin archivo** si el multipart falla: salva medicamentos e indicaciones aunque se
+  pierda el PDF, con `toast.warning`. Si también falla, `toast.error` y ningún registro.
+- **Migración `1779000002`**: `recetas.pdf` pasa a `protected: true` (ver "Reglas de acceso").
+- Botón "Descargar receta (PDF)" en `ConsultaPreviaCard`; el token se pide al hacer clic desde
+  `ConsultasPrevias.descargarReceta()`.
+
+Probado contra PocketBase levantado, con cuentas temporales borradas al terminar: receta con
+`pdf` no vacío y archivo en `storage/`; fallo de subida (blob de 6 MB) → rama de reintento;
+PocketBase apagado a mitad → cero huérfanos; médico y enfermera descargan (200), recepcionista
+no lista nada y recibe 404, y sin token o con token inventado también 404.
+
+> ⚠️ **Sin verificar: el enlace de descarga dentro de Electron.** Las pruebas anteriores son por
+> API y no tocan el renderer. `electron/main.js` no define `setWindowOpenHandler` ni
+> `will-download`; por eso el enlace usa `?download=1` (fuerza `Content-Disposition: attachment`)
+> en vez de `target="_blank"`. Falta recorrerlo en `npm run dev`.
+
 ## Incidente de seguridad — exposición de `pb_data` (3 septiembre 2026)
 
 Redactada para poder responderla en la defensa. Todo lo que sigue es verificable en el
@@ -283,20 +319,7 @@ reposo y de respaldos fuera del equipo, más abajo.
 
 ## Pendientes críticos para la defensa
 
-### 1. La receta PDF nunca se archiva en el expediente
-Verificado en código: `src/pages/NewConsultation.jsx:352` termina con `doc.save(nombreArchivo)`,
-que **solo descarga** el archivo al equipo del médico. El registro de la receta se crea pero su
-campo `pdf` queda vacío (confirmado en la base: `pdf: ""`).
-
-- La receta no se puede reimprimir desde el expediente. Si el paciente la pierde, hay que
-  recapturar la consulta entera.
-- El campo `pdf` del esquema es letra muerta.
-- La NOM-024 espera que el documento entregado al paciente quede archivado.
-
-Arreglo: `doc.output('blob')` y subirlo al campo `pdf` con `FormData`, además de descargarlo;
-luego enlace de descarga en `ConsultaPreviaCard`. Asana `1217971750122965`, vence 10/09.
-
-### 2. Seguridad de despliegue (bloque del prof. Badillo)
+### 1. Seguridad de despliegue (bloque del prof. Badillo)
 
 | Pendiente | Estado verificado | Asana |
 |---|---|---|
@@ -307,15 +330,16 @@ luego enlace de descarga en `ConsultaPreviaCard`. Asana `1217971750122965`, venc
 | Panel `/_/` expuesto | Accesible desde toda la LAN; desde ahí se salta el RLS por completo. | `1217969971867507`, 17/09 |
 | Bloqueo de sesión | `Layout.jsx:15` — `INACTIVIDAD_MS = 30 * 60 * 1000`. En un consultorio con la pantalla a la vista del paciente deberían ser 5 min. | `1217970107763004`, 17/09 |
 | Vista de auditoría | El `audit_log` existe pero no se puede consultar desde la app. | `1217970107827075`, 16/09 |
+| **Sin Content-Security-Policy** | Verificado el 09/09: no hay CSP en ninguna capa — ni `<meta>` en `index.html`, ni `onHeadersReceived` en `electron/main.js`. El aviso de Electron **solo sale en desarrollo** (lo silencia en la app empaquetada), pero la ausencia de política es real en producción: una inyección en el renderer podría cargar código de cualquier origen y exfiltrar el expediente. `nodeIntegration:false` y `contextIsolation:true` limitan el daño, no la carga remota. | `1218348694623866`, 16/09 |
 
-### 3. Otros abiertos (verificados en código)
+### 2. Otros abiertos (verificados en código)
 
 - **Signos vitales del expediente** leen solo `consultas[0]` (`PatientDetail.jsx:187-194`): si la
   consulta más reciente no los tiene, el expediente aparenta no tener ninguno. `1217971294731931`
 - **Diagnósticos repetidos** sin agrupar en "Condiciones Actuales". `1217985775397589`
 - **Anchos fijos en px no escalan** con F9; el login parte texto. `1217971220444612`
 - **Recharts y el zoom de Electron**: solo comprobable dentro de `npm run dev`. `1217971158334650`
-- **Informes muestra ceros** con el periodo mensual por defecto. `1217984348969837`
+- **Informes muestra ceros** con el periodo mensual por defecto. `1217984348900630`
 - Documentación, diagramas, README, manual de instalación, congelamiento de alcance, pruebas de
   humo de los 4 roles, ensayo con proyector, video de respaldo y los tres bancos de preguntas por
   sinodal: 26 tareas abiertas en total, todas fechadas en Asana.
