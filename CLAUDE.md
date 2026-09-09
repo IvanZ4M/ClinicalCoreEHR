@@ -136,8 +136,9 @@ pendiente, agendada junto con la de `pocketbase.exe` (Asana `1218178974697650`).
 
 ## Estado actual (3 septiembre 2026) — leer antes de tocar código
 
-Rama activa `feat/ui-redesign`, en `a2e5b0d`, **commiteada y empujada a `origin`**.
-`main` en `dc7afb0`. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
+Rama activa `feat/ui-redesign`, en `1c0d457`, **1 commit por delante de `origin` (sin empujar)**
+y 2 por delante de `main` (`3a39f95` y `1c0d457`). `main` en `65bb5ba`, que ya incluye la fusión
+del rediseño. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
 Plan en Asana, proyecto "Plan Semanal" (`1217838653061608`), tareas con prefijo `[CCEHR]`.
 La skill `.claude/skills/asana-sync/` mantiene ese tablero sincronizado.
 
@@ -155,8 +156,10 @@ resuelve contra este repositorio. El motivo está en "Incidente de seguridad", m
 | `c2c9e55` — "Cuarto Commit" | podado; solo tocaba los binarios de `pb_data` |
 
 El trabajo de los días 29–31 de agosto **sí está commiteado y empujado**: 7 commits del 31/08
-más 6 commits del 03/09. `feat/ui-redesign` sigue **sin fusionar a `main`** — esa fusión es la
-tarea abierta más urgente (Asana `1217984345164995`).
+más 6 commits del 03/09. **La fusión a `main` ya se hizo** el 03/09 en `65bb5ba` ("Merge
+feat/ui-redesign: rediseno, correcciones de RLS y limpieza de pb_data"), y la tarea de Asana
+`1217984345164995` está cerrada. Corregido el 09/09: este párrafo afirmaba lo contrario y que
+`main` seguía en `dc7afb0`.
 
 `pocketbase/pb_data/` ya no está en el repositorio ni en el historial, y el `.gitignore` ignora
 el directorio completo. La base local de trabajo sigue en su sitio, sin versionar.
