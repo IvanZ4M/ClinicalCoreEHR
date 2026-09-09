@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { validators } from '../lib/validators'
 import { formatearEdad } from '../lib/edad'
 import { logError, logWarn } from '../lib/logger'
+import { nombreMedico } from '../lib/medico'
 import { jsPDF } from 'jspdf'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
@@ -299,7 +300,7 @@ export default function NewConsultation() {
       doc.text(nombreConsultorio, 14, 14)
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      doc.text(`Dr. ${usuario.nombre} ${usuario.apellidos}  |  ${usuario.especialidad || 'Médico General'}`, 14, 22)
+      doc.text(`${nombreMedico(usuario)}  |  ${usuario.especialidad || 'Médico General'}`, 14, 22)
       if (usuario.cedula_profesional) doc.text(`Cédula: ${usuario.cedula_profesional}`, 14, 28)
       if (direccion || telConsultorio) doc.text(`${direccion}${telConsultorio ? '  |  Tel: ' + telConsultorio : ''}`, 14, 34)
       doc.setTextColor(200, 225, 255)
@@ -325,16 +326,16 @@ export default function NewConsultation() {
         doc.setFillColor(254, 235, 235)
         doc.roundedRect(10, y + 24, ancho - 20, 10, 2, 2, 'F')
         doc.setTextColor(180, 30, 30); doc.setFontSize(8); doc.setFont('helvetica', 'bold')
-        doc.text(`ALERGIAS CRITICAS: ${paciente.alergias.toUpperCase()}`, 14, y + 31)
+        doc.text(`ALERGIAS CRÍTICAS: ${paciente.alergias.toUpperCase()}`, 14, y + 31)
         y += 10
       }
 
       y += 34
       doc.setTextColor(23, 96, 165); doc.setFontSize(9); doc.setFont('helvetica', 'bold')
-      doc.text('DIAGNOSTICO', 14, y)
+      doc.text('DIAGNÓSTICO', 14, y)
       doc.setDrawColor(23, 96, 165); doc.setLineWidth(0.3); doc.line(14, y + 1, ancho - 14, y + 1)
       y += 6; doc.setTextColor(30, 30, 30); doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
-      if (diagnosticos.length === 0) { doc.text('Sin diagnostico registrado', 14, y); y += 6 }
+      if (diagnosticos.length === 0) { doc.text('Sin diagnóstico registrado', 14, y); y += 6 }
       else { diagnosticos.forEach(dx => { doc.setFont('helvetica', 'bold'); doc.text(`${dx.codigo}  `, 14, y); doc.setFont('helvetica', 'normal'); doc.text(dx.desc, 32, y); y += 6 }) }
 
       y += 4
@@ -350,8 +351,8 @@ export default function NewConsultation() {
           doc.setTextColor(30, 30, 30); doc.setFont('helvetica', 'bold'); doc.setFontSize(10)
           doc.text(`${i + 1}. ${med.nombre}`, 14, y)
           doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60, 60, 60)
-          doc.text(`Dosis: ${med.dosis}   Via: ${med.via}   Frecuencia: ${med.frecuencia}`, 18, y + 6)
-          if (med.duracion) doc.text(`Duracion: ${med.duracion}`, 18, y + 12)
+          doc.text(`Dosis: ${med.dosis}   Vía: ${med.via}   Frecuencia: ${med.frecuencia}`, 18, y + 6)
+          if (med.duracion) doc.text(`Duración: ${med.duracion}`, 18, y + 12)
           if (med.indicaciones) {
             doc.setTextColor(100, 100, 100); doc.setFontSize(8)
             const lineas = doc.splitTextToSize(`Indicaciones: ${med.indicaciones}`, ancho - 36)
@@ -375,13 +376,13 @@ export default function NewConsultation() {
       doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3)
       doc.line(ancho / 2 - 40, yFirma, ancho / 2 + 40, yFirma)
       doc.setTextColor(30, 30, 30); doc.setFontSize(9); doc.setFont('helvetica', 'bold')
-      doc.text(`Dr. ${usuario.nombre} ${usuario.apellidos}`, ancho / 2, yFirma + 5, { align: 'center' })
+      doc.text(nombreMedico(usuario), ancho / 2, yFirma + 5, { align: 'center' })
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 80)
-      doc.text(usuario.especialidad || 'Medico General', ancho / 2, yFirma + 10, { align: 'center' })
-      if (usuario.cedula_profesional) doc.text(`Cedula: ${usuario.cedula_profesional}`, ancho / 2, yFirma + 15, { align: 'center' })
+      doc.text(usuario.especialidad || 'Médico General', ancho / 2, yFirma + 10, { align: 'center' })
+      if (usuario.cedula_profesional) doc.text(`Cédula: ${usuario.cedula_profesional}`, ancho / 2, yFirma + 15, { align: 'center' })
       doc.setFillColor(23, 96, 165); doc.rect(0, alturaPagina - 12, ancho, 12, 'F')
       doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal')
-      doc.text('Documento generado por ClinicalCore EHR - Valido solo con firma del medico', ancho / 2, alturaPagina - 5, { align: 'center' })
+      doc.text('Documento generado por ClinicalCore EHR - Válido solo con firma del médico', ancho / 2, alturaPagina - 5, { align: 'center' })
 
       // VULN-FIX (ÁREA 6): el nombre del archivo NO debe incluir datos del
       // paciente. Un nombre predecible (apellido + fecha) permite identificar
@@ -871,7 +872,7 @@ export default function NewConsultation() {
           pacienteId={pacienteId}
           pacienteNombre={paciente ? `${paciente.nombre} ${paciente.apellidos}` : ''}
           medicoId={usuario?.id}
-          medicoNombre={usuario ? `${usuario.nombre} ${usuario.apellidos}` : ''}
+          medicoNombre={usuario ? nombreMedico(usuario) : ''}
           consultorio={usuario?.consultorio || ''}
           planTratamiento={planTratamiento}
         />

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useNotifications } from '../../context/NotificationsContext'
 import { I } from '../icons'
+import { nombreMedico } from '../../lib/medico'
 
 const ROUTE_LABELS = {
   '/':               'Panel de Control',
@@ -252,7 +253,7 @@ export default function TopBar() {
           <div className="avatar" style={{ width: 30, height: 30, fontSize: 'var(--fs-1)' }}>{initials}</div>
           <div style={{ textAlign: 'left', display: 'none' }} className="md:block">
             <p style={{ fontSize: 'var(--fs-1)', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-              {usuario ? `Dr. ${usuario.nombre}` : 'Usuario'}
+              {usuario ? nombreMedico(usuario, { apellidos: false }) : 'Usuario'}
             </p>
             <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', textTransform: 'capitalize', marginTop: 1 }}>
               {usuario?.especialidad || usuario?.rol || ''}

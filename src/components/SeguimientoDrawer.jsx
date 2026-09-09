@@ -194,7 +194,7 @@ export default function SeguimientoDrawer({
           display: 'flex', gap: '1rem', flexShrink: 0,
           background: 'var(--bg-subtle)',
         }}>
-          <MetaChip icon={<I.User width={12} height={12} />}    label="Médico"      value={medicoNombre ? `Dr. ${medicoNombre}` : '—'} />
+          <MetaChip icon={<I.User width={12} height={12} />}    label="Médico"      value={medicoNombre || '—'} />
           {consultorio && <MetaChip icon={<I.Calendar width={12} height={12} />} label="Consultorio" value={consultorio} />}
         </div>
 

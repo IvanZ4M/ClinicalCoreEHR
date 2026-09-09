@@ -9,6 +9,7 @@ import MetricCard from '../components/MetricCard'
 import DiagnosticosFrecuentes from '../components/DiagnosticosFrecuentes'
 import pb from '../lib/pb'
 import { logError } from '../lib/logger'
+import { tratamiento } from '../lib/medico'
 import { I } from '../components/icons'
 import { safeAnimate, staggerContainer, listItem } from '../lib/animations'
 
@@ -158,7 +159,7 @@ export default function Dashboard() {
               fontSize: 'var(--fs-6)', fontWeight: 500,
               letterSpacing: '-0.025em', color: 'var(--text)', lineHeight: 1.2,
             }}>
-              {obtenerSaludo()}, Dr.&nbsp;{apellido}
+              {obtenerSaludo()}, {tratamiento(usuario)}&nbsp;{apellido}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
               <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-3)' }}>

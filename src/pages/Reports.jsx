@@ -7,6 +7,7 @@ import { useColeccion } from '../hooks/usePocketBase'
 import pb from '../lib/pb'
 import { useAuth } from '../context/AuthContext'
 import { I } from '../components/icons'
+import { nombreMedico } from '../lib/medico'
 
 const CHART_COLORS = [
   'var(--accent)', 'var(--ok)', 'var(--warn)', 'var(--danger)',
@@ -330,7 +331,7 @@ export default function Reports() {
                     <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-2)' }}>{formatearFecha(c.fecha)}</td>
                     <td style={{ padding: '0.75rem 1.25rem', fontWeight: 600, color: 'var(--text)' }}>{pac ? `${pac.nombre} ${pac.apellidos}` : '—'}</td>
                     <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-2)' }}>{med?.especialidad || 'Medicina General'}</td>
-                    <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-2)' }}>{med ? `Dr. ${med.nombre} ${med.apellidos}` : '—'}</td>
+                    <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-2)' }}>{nombreMedico(med)}</td>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <span className={c.estado === 'completada' ? 'badge badge-ok' : 'badge badge-warn'}>
                         {c.estado === 'completada' ? 'Completada' : 'Borrador'}

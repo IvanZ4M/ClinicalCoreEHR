@@ -7,6 +7,7 @@ import { FormField } from '../components/FormField'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
 import StatusActionMenu from '../components/StatusActionMenu'
+import { nombreMedico } from '../lib/medico'
 
 const DIAS  = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -349,7 +350,7 @@ export default function Appointments() {
 
               <MSelect label="Médico asignado" value={form.medico} onChange={handleMedicoChange}>
                 <option value="">Sin asignar</option>
-                {medicos.map(m => <option key={m.id} value={m.id}>Dr. {m.nombre} {m.apellidos}</option>)}
+                {medicos.map(m => <option key={m.id} value={m.id}>{nombreMedico(m)}</option>)}
               </MSelect>
 
               <FormField label="Fecha y hora" required error={errorFecha} touched={!!errorFecha || !!form.fecha_hora}>

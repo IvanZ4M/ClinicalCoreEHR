@@ -8,6 +8,7 @@ import pb from '../lib/pb'
 import { logAuditEvent } from '../services/auditService'
 import { I } from '../components/icons'
 import ConsultasPrevias from '../components/ConsultasPrevias'
+import { nombreMedico } from '../lib/medico'
 
 function calcularEdad(fechaNacimiento) {
   if (!fechaNacimiento) return '—'
@@ -249,7 +250,7 @@ export default function PatientDetail() {
                   </p>
                   {citasFuturas[0].expand?.medico && (
                     <p style={{ fontSize: 'var(--fs-1)', color: 'var(--text-2)', marginTop: '0.25rem' }}>
-                      Dr. {citasFuturas[0].expand.medico.nombre} {citasFuturas[0].expand.medico.apellidos}
+                      {nombreMedico(citasFuturas[0].expand.medico)}
                     </p>
                   )}
                 </div>

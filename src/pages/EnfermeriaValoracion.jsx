@@ -6,6 +6,7 @@ import { validators } from '../lib/validators'
 import { formatearEdad } from '../lib/edad'
 import pb from '../lib/pb'
 import { I } from '../components/icons'
+import { nombreMedico } from '../lib/medico'
 
 function calcularEdad(fechaNacimiento) {
   if (!fechaNacimiento) return null
@@ -222,7 +223,7 @@ export default function EnfermeriaValoracion() {
               </div>
             )}
 
-            <InfoFila label="Médico asignado" value={medico ? `Dr. ${medico.nombre} ${medico.apellidos}` : '—'} />
+            <InfoFila label="Médico asignado" value={nombreMedico(medico)} />
             {cita.consultorio && <InfoFila label="Consultorio" value={cita.consultorio} />}
             {cita.notas && <InfoFila label="Notas de cita" value={cita.notas} />}
           </div>

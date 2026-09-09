@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import { I } from './icons'
+import { nombreMedico } from '../lib/medico'
 
 const TIPO_CITA_LABEL = {
   consulta_general: 'Consulta General',
@@ -128,7 +129,7 @@ const ConsultaPreviaCard = memo(function ConsultaPreviaCard({
                 </span>
                 {consulta.expand?.medico && (
                   <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                    Dr. {consulta.expand.medico.nombre} {consulta.expand.medico.apellidos}
+                    {nombreMedico(consulta.expand.medico)}
                   </span>
                 )}
               </div>

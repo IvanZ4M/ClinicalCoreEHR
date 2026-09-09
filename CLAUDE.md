@@ -78,6 +78,22 @@ Aplicadas por migración, no en el cliente. Lo esencial:
 - Solo `administrador` crea/borra usuarios (`manageRule`).
 - En colecciones auth se usa `@request.auth.rol`, **no** `@request.auth.record.rol`.
 
+## Cómo se prueba en este proyecto
+
+**Las pruebas se hacen recorriendo el flujo clínico real completo**, de principio a fin:
+cita → triage → consulta → diagnóstico → receta → firmar y finalizar. No basta con ejercitar
+la función que se acaba de tocar.
+
+**Y con datos coherentes entre sí.** El motivo, la exploración, los signos vitales, la edad
+del paciente, el diagnóstico y la medicación tienen que contar la misma historia clínica.
+Nada de datos de relleno, ni `aaa`, ni `prueba123`, ni un antibiótico para un esguince.
+
+No es formalismo. Los defectos que más han dolido en este proyecto solo aparecen cuando los
+datos son verosímiles: una pediatra firmando la receta de un paciente de 24 años, o un
+`Dr.` fijo delante del nombre de una médica, no se ven en una prueba unitaria — se ven al
+mirar el PDF de una consulta que podría haber sido real. Un relleno sin sentido hace que
+esos fallos pasen desapercibidos justo hasta la defensa.
+
 ## Convenciones
 
 - Nombres de dominio en español (`usuario`, `cargando`, `guardando`, `citas`); comentarios en español.
@@ -239,7 +255,35 @@ no lista nada y recibe 404, y sin token o con token inventado también 404.
 > ⚠️ **Sin verificar: el enlace de descarga dentro de Electron.** Las pruebas anteriores son por
 > API y no tocan el renderer. `electron/main.js` no define `setWindowOpenHandler` ni
 > `will-download`; por eso el enlace usa `?download=1` (fuerza `Content-Disposition: attachment`)
-> en vez de `target="_blank"`. Falta recorrerlo en `npm run dev`.
+> en vez de `target="_blank"`. **Verificado en Electron el 09/09**: el diálogo de guardado sale
+> y el archivo descarga correctamente.
+
+### ✅ Resuelto el 9 de septiembre — el tratamiento y los acentos de la receta
+
+Al revisar el PDF ya archivado aparecieron defectos de presentación en el documento que se
+entrega al paciente y que lleva la cédula profesional:
+
+- **`Dr.` estaba escrito a mano en 13 sitios de 11 archivos**, incluidos los dos de la receta.
+  Con una médica en el padrón, los 13 estaban mal. Ahora `src/lib/medico.js` expone
+  `tratamiento()` y `nombreMedico()`, que derivan Dr./Dra. del campo `sexo` de `usuarios`
+  (**migración `1779000003`**, misma convención `masculino`/`femenino`/`otro` que `pacientes`).
+  Cuando el campo está vacío cae a `Dr.`, que es lo que la app ya mostraba: el cambio nunca
+  empeora lo anterior.
+- `nombreMedico()` **colapsa espacios**: un `nombre` capturado como `"Vania "` imprimía
+  `Dr. Vania  Zamarron Camacho` con doble espacio.
+- **Acentos en las etiquetas fijas**: `DIAGNÓSTICO`, `Vía`, `Duración`, `Cédula`, `Válido`,
+  `médico`, `ALERGIAS CRÍTICAS`, `Médico General`. jsPDF los soporta sin configuración —
+  comprobado extrayendo el content stream— simplemente estaban escritos sin acentuar. El texto
+  libre sí los llevaba, de ahí la incoherencia.
+- `ROLE_PREFIX` en `roles.js` es un mapa **sin uso** que también fija `'Dr.'`. Queda anotado
+  para que nadie lo use y reintroduzca el fallo.
+
+> ⚠️ **La migración añade la columna `sexo`, no el dato.** Hay que rellenarla para cada médico
+> desde la pantalla de Usuarios; hasta entonces todos siguen saliendo como `Dr.`.
+
+**No reproduce:** se revisó también que el grupo sanguíneo perdía el signo (`AB` en vez de
+`AB-`). Es falso: la base guarda `"AB-"` (3 caracteres), jsPDF escribe el guion, y el PDF real
+archivado contiene literalmente `"Grupo sanguíneo: AB-"`. No se cambió nada por esto.
 
 ## Incidente de seguridad — exposición de `pb_data` (3 septiembre 2026)
 
@@ -365,8 +409,17 @@ reposo y de respaldos fuera del equipo, más abajo.
   despliegue real es en red. Está **fuera del repositorio**, así que no se puede corregir desde
   aquí; la redacción correcta ya está en `README.md`, sección "Modelo de despliegue".
   Asana `1218178774746540`, vence 19/09. Blanco directo del prof. Diosdado.
-- Datos del consultorio en `localStorage`. CIE-10 y medicamentos hardcodeados en
-  `NewConsultation.jsx`. Sin tests ni CI.
+- Datos del consultorio en `localStorage`. Sin tests ni CI.
+- **CIE-10 y medicamentos hardcodeados en `NewConsultation.jsx`**: 35 códigos CIE-10 y 20
+  medicamentos incrustados en la pantalla. Falta el capítulo S completo (traumatología) y
+  ausencias tan comunes como `M79.1` (mialgia) y `K29.7` (gastritis). Sacar el catálogo a un
+  archivo de datos y llegar a 60–80 códigos. Asana `1218354398964031`, vence 18/09, alta
+  prioridad: si un sinodal pide registrar una gastritis en vivo, hoy no se puede.
+- **Datos incoherentes en el padrón**, detectados al revisar la receta impresa (son datos, no
+  código; se corrigen desde la pantalla de Usuarios): la Dra. Camacho figura con especialidad
+  `Pediatría` pero atiende adultos en la demo, su `apellidos` dice `Zamarron Camacho` en vez
+  de `Camacho`, su `nombre` tiene un espacio final, y el campo `sexo` está vacío para los dos
+  médicos desde la migración `1779000003`.
 - Cada pantalla conserva su `calcularEdad` local duplicado; unificar contra `src/lib/edad.js`.
 
 ### Sin verificar

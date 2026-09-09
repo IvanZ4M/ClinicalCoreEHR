@@ -4,6 +4,7 @@ import { useColeccion } from '../hooks/usePocketBase'
 import { saludo } from '../lib/roles'
 import { I } from '../components/icons'
 import pb from '../lib/pb'
+import { nombreMedico } from '../lib/medico'
 
 const ESTADO_COLOR = {
   programada:  { color: 'var(--accent)',       dim: 'var(--accent-dim)',             label: 'Programada'  },
@@ -129,7 +130,7 @@ export default function DashboardRecepcionista() {
                       {formatearHora(c.fecha_hora)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)' }}>
-                      {med ? `Dr. ${med.nombre} ${med.apellidos}` : '—'}
+                      {nombreMedico(med)}
                     </td>
                     <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-2)', maxWidth: 180 }}>
                       <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -187,7 +188,7 @@ export default function DashboardRecepcionista() {
                       {pac ? `${pac.nombre} ${pac.apellidos}` : '—'}
                     </td>
                     <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-2)' }}>
-                      {med ? `Dr. ${med.nombre}` : '—'}
+                      {nombreMedico(med, { apellidos: false })}
                     </td>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <span style={{ fontSize: 'var(--fs-1)', fontWeight: 600, padding: '0.25rem 0.625rem', borderRadius: 'var(--radius-full)', background: cfg.dim, color: cfg.color }}>

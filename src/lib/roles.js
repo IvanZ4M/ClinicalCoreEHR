@@ -17,6 +17,8 @@ export const ROLE_LABELS = {
 }
 
 // ── Prefijo para saludo contextual ───────────────────────────────────────────
+// ⚠️ Sin uso hoy. Para el trato al personal médico usa `tratamiento()` de
+// src/lib/medico.js: este mapa no distingue Dr./Dra. y reintroduciria el fallo.
 export const ROLE_PREFIX = {
   medico:          'Dr.',
   enfermera:       'Enf.',

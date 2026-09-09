@@ -5,6 +5,7 @@ import { useColeccion } from '../hooks/usePocketBase'
 import { saludo } from '../lib/roles'
 import { I } from '../components/icons'
 import { formatearEdad } from '../lib/edad'
+import { nombreMedico } from '../lib/medico'
 
 function hoyRango() {
   const d = new Date()
@@ -153,7 +154,7 @@ export default function EnfermeriaQueue() {
                       </span>
                       {med && (
                         <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-3)' }}>
-                          Dr. {med.nombre} {med.apellidos}
+                          {nombreMedico(med)}
                         </span>
                       )}
                     </div>
