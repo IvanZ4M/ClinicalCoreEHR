@@ -38,7 +38,7 @@ export default function Users() {
   const [form, setForm] = useState({
     nombre: '', apellidos: '', email: '',
     password: '', passwordConfirm: '',
-    rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true,
+    rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', sexo: '', activo: true,
   })
 
   const getUserRules = (esNuevo) => ({
@@ -90,7 +90,7 @@ export default function Users() {
   const bloqueados    = usuarios.filter(u => !u.activo).length
 
   const resetForm = () => {
-    setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', activo: true })
+    setForm({ nombre: '', apellidos: '', email: '', password: '', passwordConfirm: '', rol: 'medico', cedula_profesional: '', especialidad: '', consultorio: '', sexo: '', activo: true })
     setErrorForm('')
     setFormErrors({})
     setFormTouched({})
@@ -107,7 +107,7 @@ export default function Users() {
   }
 
   const abrirEditar = (usuario) => {
-    setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', consultorio: usuario.consultorio || '', activo: usuario.activo ?? true })
+    setForm({ nombre: usuario.nombre || '', apellidos: usuario.apellidos || '', email: usuario.email || '', password: '', passwordConfirm: '', rol: usuario.rol || 'medico', cedula_profesional: usuario.cedula_profesional || '', especialidad: usuario.especialidad || '', consultorio: usuario.consultorio || '', sexo: usuario.sexo || '', activo: usuario.activo ?? true })
     setModalEditar(usuario); setErrorForm(''); setFormErrors({}); setFormTouched({})
   }
 
@@ -115,7 +115,7 @@ export default function Users() {
     if (!validateAllUserFields(false)) return
     setGuardando(true); setErrorForm('')
     try {
-      const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, consultorio: form.consultorio, activo: form.activo }
+      const datos = { nombre: form.nombre, apellidos: form.apellidos, email: form.email, rol: form.rol, cedula_profesional: form.cedula_profesional, especialidad: form.especialidad, consultorio: form.consultorio, sexo: form.sexo, activo: form.activo }
       if (form.password) { datos.password = form.password; datos.passwordConfirm = form.passwordConfirm }
       await pb.collection('usuarios').update(modalEditar.id, datos)
       setModalEditar(null); resetForm(); recargar()
@@ -407,10 +407,23 @@ function ModalUsuario({ titulo, form, setForm, formErrors, formTouched, onBlur, 
                 onChange={e => setForm({ ...form, especialidad: e.target.value })} />
             </div>
           </div>
-          <div>
-            <label className="field-label">Cédula profesional</label>
-            <input className="input" type="text" value={form.cedula_profesional} placeholder="Número de cédula"
-              onChange={e => setForm({ ...form, cedula_profesional: e.target.value })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label className="field-label">Cédula profesional</label>
+              <input className="input" type="text" value={form.cedula_profesional} placeholder="Número de cédula"
+                onChange={e => setForm({ ...form, cedula_profesional: e.target.value })} />
+            </div>
+            {/* De aquí sale el "Dr." o "Dra." de la receta impresa y de toda la
+                interfaz (src/lib/medico.js). Si se deja vacío se usa "Dr.". */}
+            <div>
+              <label className="field-label">Sexo</label>
+              <select value={form.sexo} onChange={e => setForm({ ...form, sexo: e.target.value })} className="input">
+                <option value="">Sin especificar</option>
+                <option value="femenino">Femenino</option>
+                <option value="masculino">Masculino</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
           </div>
           {form.rol === 'medico' && (
             <div>
