@@ -383,7 +383,7 @@ reposo y de respaldos fuera del equipo, más abajo.
 | **TLS en la red local** | Tráfico en `http://` plano: usuario, contraseña y expedientes viajan legibles. Caddy o mkcert. | `1217984345370767`, 15/09 |
 | **Cifrado en reposo (BitLocker)** | `pb_data/data.db` es SQLite **sin cifrar**: con acceso físico se copia a una USB y se lee todo sin dejar rastro en `audit_log`. Documentar BitLocker como requisito de instalación. | `1217984345320036`, 15/09 |
 | **Auditoría de todas las escrituras** | Hoy `audit_log` solo registra `LOGIN_OK`, `LOGOUT` y `VER_EXPEDIENTE`. Falta toda creación y modificación de paciente, consulta, diagnóstico, receta y usuario. | `1217984345378164`, 16/09 |
-| **Respaldos automatizados y probados** | Existe `scripts/backup.bat` pero no está automatizado ni se ha restaurado nunca. **Dos defectos verificados el 09/09, ver abajo: anula el cifrado en reposo y copia en caliente.** Esquema 3-2-1 + restauración documentada. | `1217969931277095`, 17/09 |
+| **Respaldos automatizados y probados** | Existe `scripts/backup.bat` pero no está automatizado ni se ha restaurado nunca. **Dos defectos verificados el 09/09, ver abajo: anula el cifrado en reposo y copia en caliente.** Esquema 3-2-1 + restauración documentada. | `1217969931277095`, **16/09** |
 | Panel `/_/` expuesto | Accesible desde toda la LAN; desde ahí se salta el RLS por completo. | `1217969971867507`, 17/09 |
 | Bloqueo de sesión | `Layout.jsx:15` fija `INACTIVIDAD_MS = 30 * 60 * 1000` **e ignora `VITE_INACTIVITY_TIMEOUT`**, que ya existe en `.env.development` y `.env.production` sin que nadie la lea. En un consultorio con la pantalla a la vista del paciente deberían ser 5 min. | `1217970107763004`, 17/09 |
 | Vista de auditoría | El `audit_log` existe pero no se puede consultar desde la app. | `1217970107827075`, 16/09 |
@@ -401,7 +401,7 @@ en seis. Solo hay tres dependencias reales entre las ocho; el resto es paraleliz
 |---|---|---|
 | 1 | **Bloqueo de sesión** — cierra una tarjeta antes de entrar a lo pesado. No basta con bajar el número: `Layout.jsx` debe **leer `VITE_INACTIVITY_TIMEOUT`** en vez de tener el valor a mano, con 5 min por defecto. Una variable de entorno que el código ignora es una pregunta gratis para un sinodal. | primero, ~10 min |
 | 2 | Decidir Caddy o mkcert → **TLS** → **panel `/_/`** en el mismo movimiento | 15/09 |
-| 3 | **Cifrado en reposo + respaldos**, juntos | 15–16/09 |
+| 3 | **Cifrado en reposo + respaldos**, juntos (respaldos ya movida del 17 al 16 en Asana) | 15–16/09 |
 | 4 | **Auditoría de escrituras** → **vista de auditoría**, en ese orden | 16/09 |
 | 5 | **CSP**: empezar ya por `script-src`, `object-src` y `frame-src`; `connect-src` al final | parcial ya, cierre tras TLS |
 
