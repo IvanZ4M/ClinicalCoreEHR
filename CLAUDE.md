@@ -150,11 +150,12 @@ Comprobar con `git log -1 --format=%B` después de commitear. Esto corta el prob
 adelante**; los 41 commits que ya los llevan siguen igual hasta la reescritura de historial
 pendiente, agendada junto con la de `pocketbase.exe` (Asana `1218178974697650`).
 
-## Estado actual (3 septiembre 2026) — leer antes de tocar código
+## Estado actual (9 septiembre 2026) — leer antes de tocar código
 
-Rama activa `feat/ui-redesign`, en `1c0d457`, **1 commit por delante de `origin` (sin empujar)**
-y 2 por delante de `main` (`3a39f95` y `1c0d457`). `main` en `65bb5ba`, que ya incluye la fusión
-del rediseño. Defensa objetivo: finales de septiembre / inicios de octubre 2026.
+Rama activa `feat/ui-redesign`, **commiteada y empujada a `origin`**. `main` en `65bb5ba`, que
+ya incluye la fusión del rediseño; `feat/ui-redesign` va por delante con el trabajo del 09/09 y
+**sigue sin fusionar** desde entonces. Defensa objetivo: finales de septiembre / inicios de
+octubre 2026.
 Plan en Asana, proyecto "Plan Semanal" (`1217838653061608`), tareas con prefijo `[CCEHR]`.
 La skill `.claude/skills/asana-sync/` mantiene ese tablero sincronizado.
 
@@ -278,12 +279,21 @@ entrega al paciente y que lleva la cédula profesional:
 - `ROLE_PREFIX` en `roles.js` es un mapa **sin uso** que también fija `'Dr.'`. Queda anotado
   para que nadie lo use y reintroduzca el fallo.
 
+- **El formulario de Usuarios no tenía el campo `sexo`.** La migración habría quedado
+  inservible desde la app: la única vía para rellenarlo sería el panel `/_/`, que es justo lo
+  que hay pendiente restringir. Añadido el select junto a la cédula profesional.
+
 > ⚠️ **La migración añade la columna `sexo`, no el dato.** Hay que rellenarla para cada médico
 > desde la pantalla de Usuarios; hasta entonces todos siguen saliendo como `Dr.`.
 
 **No reproduce:** se revisó también que el grupo sanguíneo perdía el signo (`AB` en vez de
 `AB-`). Es falso: la base guarda `"AB-"` (3 caracteres), jsPDF escribe el guion, y el PDF real
 archivado contiene literalmente `"Grupo sanguíneo: AB-"`. No se cambió nada por esto.
+
+**Correcciones de datos comprometidas para el 10/09** (son datos, no código; se hacen desde la
+pantalla de Usuarios): `sexo` de los dos médicos; para la Dra. Camacho, `apellidos` a `Camacho`,
+quitar el espacio final de `nombre` y `especialidad` a `Medicina General`; y las erratas de
+`Ana Cariilo Martinez` y `Minerva Lopez Juarez`, que arrastran del 3/09.
 
 ## Incidente de seguridad — exposición de `pb_data` (3 septiembre 2026)
 
@@ -373,11 +383,71 @@ reposo y de respaldos fuera del equipo, más abajo.
 | **TLS en la red local** | Tráfico en `http://` plano: usuario, contraseña y expedientes viajan legibles. Caddy o mkcert. | `1217984345370767`, 15/09 |
 | **Cifrado en reposo (BitLocker)** | `pb_data/data.db` es SQLite **sin cifrar**: con acceso físico se copia a una USB y se lee todo sin dejar rastro en `audit_log`. Documentar BitLocker como requisito de instalación. | `1217984345320036`, 15/09 |
 | **Auditoría de todas las escrituras** | Hoy `audit_log` solo registra `LOGIN_OK`, `LOGOUT` y `VER_EXPEDIENTE`. Falta toda creación y modificación de paciente, consulta, diagnóstico, receta y usuario. | `1217984345378164`, 16/09 |
-| **Respaldos automatizados y probados** | Existe `scripts/backup.bat` pero no está automatizado ni se ha restaurado nunca. Un respaldo que no se restauró no es un respaldo. Esquema 3-2-1 + restauración documentada. | `1217969931277095`, 17/09 |
+| **Respaldos automatizados y probados** | Existe `scripts/backup.bat` pero no está automatizado ni se ha restaurado nunca. **Dos defectos verificados el 09/09, ver abajo: anula el cifrado en reposo y copia en caliente.** Esquema 3-2-1 + restauración documentada. | `1217969931277095`, 17/09 |
 | Panel `/_/` expuesto | Accesible desde toda la LAN; desde ahí se salta el RLS por completo. | `1217969971867507`, 17/09 |
-| Bloqueo de sesión | `Layout.jsx:15` — `INACTIVIDAD_MS = 30 * 60 * 1000`. En un consultorio con la pantalla a la vista del paciente deberían ser 5 min. | `1217970107763004`, 17/09 |
+| Bloqueo de sesión | `Layout.jsx:15` fija `INACTIVIDAD_MS = 30 * 60 * 1000` **e ignora `VITE_INACTIVITY_TIMEOUT`**, que ya existe en `.env.development` y `.env.production` sin que nadie la lea. En un consultorio con la pantalla a la vista del paciente deberían ser 5 min. | `1217970107763004`, 17/09 |
 | Vista de auditoría | El `audit_log` existe pero no se puede consultar desde la app. | `1217970107827075`, 16/09 |
 | **Sin Content-Security-Policy** | Verificado el 09/09: no hay CSP en ninguna capa — ni `<meta>` en `index.html`, ni `onHeadersReceived` en `electron/main.js`. El aviso de Electron **solo sale en desarrollo** (lo silencia en la app empaquetada), pero la ausencia de política es real en producción: una inyección en el renderer podría cargar código de cualquier origen y exfiltrar el expediente. `nodeIntegration:false` y `contextIsolation:true` limitan el daño, no la carga remota. | `1218348694623866`, 16/09 |
+
+#### Orden de ataque — acordado el 09/09, vigente para la sesión del 10/09
+
+Página consultable con el grafo de dependencias:
+https://claude.ai/code/artifact/6f5585b6-3d6d-42ea-b608-8e94bf527007
+
+Son **ocho tareas**, no seis, y los vencimientos se agolpan en **tres días** (15, 16 y 17), no
+en seis. Solo hay tres dependencias reales entre las ocho; el resto es paralelizable.
+
+| # | Movimiento | Cuándo |
+|---|---|---|
+| 1 | **Bloqueo de sesión** — cierra una tarjeta antes de entrar a lo pesado. No basta con bajar el número: `Layout.jsx` debe **leer `VITE_INACTIVITY_TIMEOUT`** en vez de tener el valor a mano, con 5 min por defecto. Una variable de entorno que el código ignora es una pregunta gratis para un sinodal. | primero, ~10 min |
+| 2 | Decidir Caddy o mkcert → **TLS** → **panel `/_/`** en el mismo movimiento | 15/09 |
+| 3 | **Cifrado en reposo + respaldos**, juntos | 15–16/09 |
+| 4 | **Auditoría de escrituras** → **vista de auditoría**, en ese orden | 16/09 |
+| 5 | **CSP**: empezar ya por `script-src`, `object-src` y `frame-src`; `connect-src` al final | parcial ya, cierre tras TLS |
+
+Las dependencias, y por qué:
+
+- **TLS es la raíz.** Cambiar esquema y puerto invalida los **12 sitios** con `http://…:8090`:
+  `.env.production`, `.env.development`, `.env.example`, `src/lib/pb.js:6`,
+  `scripts/setup-clinic.js:20`, `scripts/seed-demo.js:27`, `scripts/configure-firewall.bat:28`,
+  `scripts/install-pocketbase-service.bat:54`, más `README.md`, `README-DESPLIEGUE.md`,
+  `CHECKLIST-PRODUCCION.md` y este archivo. ⚠️ **`.env.production` está en `.gitignore`**, así
+  que no sale en una búsqueda que respete el ignore: recorre el disco, no solo lo versionado.
+- **TLS decide cómo se cierra el panel `/_/`.** Con Caddy delante es un *matcher* por ruta en
+  el mismo Caddyfile; con mkcert y PocketBase sirviendo TLS directo no hay proxy donde
+  bloquear y es otra tarea entera.
+- **Cifrado en reposo y respaldos están acoplados** — ver abajo.
+- **La vista de auditoría va detrás de las escrituras**: sin datos registrados sale vacía, y en
+  la defensa una tabla vacía es peor que no tener la pantalla. Además, el esquema de lo que se
+  registre (`accion`, `recurso`, `recurso_id`) es lo que la vista podrá filtrar.
+- **La CSP NO cuelga entera de TLS.** Solo `connect-src` necesita el origen final de
+  PocketBase; `script-src`, `object-src` y `frame-src` se pueden escribir desde ya. Cerrar
+  `connect-src` al final evita que un desajuste de esquema bloquee las peticiones **en
+  silencio**, que es como fallan las CSP: sin error visible, solo una app que deja de cargar.
+
+> ⚠️ **Decisión pendiente: Caddy vs mkcert.** Inclinación actual hacia **Caddy**, porque cierra
+> el panel `/_/` en el mismo archivo y en la defensa se explica en una frase. **Sin analizar
+> todavía — se decide el 10/09.** Antes hay que responder tres cosas:
+> 1. **Qué instala el personal de la clínica.** Caddy es un binario y un servicio más que
+>    alguien tiene que instalar y mantener; hoy `install-pocketbase-service.bat` solo registra
+>    PocketBase con NSSM.
+> 2. **Qué pasa si Caddy no arranca.** Con un proxy delante, que falle deja el sistema entero
+>    sin servicio en plena consulta. ¿Hay vuelta atrás rápida?
+> 3. **Si el certificado local hace que Electron se queje.** Un certificado de CA interna puede
+>    disparar errores de confianza en el renderer; hay que comprobar cómo se instala esa CA en
+>    cada equipo de la clínica.
+
+#### El respaldo anula el cifrado en reposo (verificado el 09/09)
+
+Dos defectos de `scripts/backup.bat` que hacen la tarjeta más urgente de lo que parecía:
+
+1. **Copia en claro.** Hace `xcopy /E` de `pb_data` entero a `D:\ClinicalCoreBackups`: una copia
+   íntegra y **sin cifrar** de la misma base que BitLocker protegería en `C:`. Cifrar el origen
+   y dejar el destino en claro no cifra nada — solo mueve el problema de disco. Por eso el
+   cifrado en reposo y los respaldos son **una sola decisión**, no dos tareas separadas.
+2. **Copia en caliente.** Se ejecuta con PocketBase encendido y el WAL activo, así que la copia
+   puede salir inconsistente: ese respaldo quizá ni sea restaurable. Hay que cambiarlo a la
+   **API `/api/backups`** de PocketBase, o detener el servicio durante la copia.
 
 ### 2. Otros abiertos (verificados en código)
 
@@ -410,11 +480,16 @@ reposo y de respaldos fuera del equipo, más abajo.
   aquí; la redacción correcta ya está en `README.md`, sección "Modelo de despliegue".
   Asana `1218178774746540`, vence 19/09. Blanco directo del prof. Diosdado.
 - Datos del consultorio en `localStorage`. Sin tests ni CI.
-- **CIE-10 y medicamentos hardcodeados en `NewConsultation.jsx`**: 35 códigos CIE-10 y 20
-  medicamentos incrustados en la pantalla. Falta el capítulo S completo (traumatología) y
-  ausencias tan comunes como `M79.1` (mialgia) y `K29.7` (gastritis). Sacar el catálogo a un
-  archivo de datos y llegar a 60–80 códigos. Asana `1218354398964031`, vence 18/09, alta
-  prioridad: si un sinodal pide registrar una gastritis en vivo, hoy no se puede.
+- **CIE-10 y medicamentos hardcodeados en `NewConsultation.jsx`**: 35 códigos CIE-10 (no ~17,
+  como se creía) y 20 medicamentos incrustados en la pantalla.
+  ⚠️ **Lo más grave es que el capítulo S está ausente por completo**: no hay ni un código de
+  traumatismos, así que hoy **no se puede codificar un esguince, una contusión ni una herida** —
+  motivos de consulta cotidianos. No falta un código suelto: falta un capítulo entero de la
+  CIE-10. Eso va antes que ampliar lo que ya existe. Después, ausencias sueltas comprobadas:
+  `M79.1` (mialgia), `K29.7` (gastritis — hoy solo hay `K30` dispepsia y `K21.0` reflujo, que
+  no son lo mismo), `K59.0`, `J20.9`, `L20.9`, `M25.5`. Sacar el catálogo a un archivo de datos
+  y llegar a 60–80 códigos. Asana `1218354398964031`, vence 18/09, alta prioridad: si un
+  sinodal pide registrar una gastritis en vivo, hoy no se puede.
 - **Datos incoherentes en el padrón**, detectados al revisar la receta impresa (son datos, no
   código; se corrigen desde la pantalla de Usuarios): la Dra. Camacho figura con especialidad
   `Pediatría` pero atiende adultos en la demo, su `apellidos` dice `Zamarron Camacho` en vez
