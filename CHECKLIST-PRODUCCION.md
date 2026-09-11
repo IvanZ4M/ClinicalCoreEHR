@@ -13,7 +13,7 @@ Marcar con `[x]` cuando esté completado.
 - [ ] DevTools deshabilitado en build de producción (verificar en `electron/main.js`)
 - [ ] Variables de entorno configuradas con IP real (ejecutar `npm run setup <IP>`)
 - [ ] `.env.production` NO incluido en el repositorio (verificar `.gitignore`)
-- [ ] Auto-cierre de sesión por inactividad funcionando (30 min)
+- [ ] Auto-cierre de sesión por inactividad funcionando (5 min por defecto; para otro valor, fijar `VITE_INACTIVITY_TIMEOUT` en `.env.production` **antes** de `npm run build:electron` — se hornea al compilar)
 
 ## Funcionalidad
 

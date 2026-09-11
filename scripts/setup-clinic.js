@@ -20,7 +20,7 @@ const envContent = [
   `VITE_POCKETBASE_URL=http://${ip}:8090`,
   'NODE_ENV=production',
   'VITE_APP_ENV=production',
-  'VITE_INACTIVITY_TIMEOUT=1800000',
+  'VITE_INACTIVITY_TIMEOUT=300000',
   'VITE_APP_VERSION=1.0.0',
   '',
 ].join('\n')

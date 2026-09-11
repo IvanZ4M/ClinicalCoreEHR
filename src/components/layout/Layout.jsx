@@ -7,12 +7,34 @@ import TopBar from './TopBar'
 import { NotificationsProvider } from '../../context/NotificationsContext'
 import { useTheme } from '../../context/ThemeContext'
 import { safeAnimate, slideUp } from '../../lib/animations'
+import { logWarn } from '../../lib/logger'
 import pb from '../../lib/pb'
 
 // VULN-FIX (ÁREA 3): en entorno médico, si el sistema queda desatendido
-// otro personal podría ver el expediente del paciente anterior.
-// 30 minutos de inactividad cierra la sesión automáticamente.
-const INACTIVIDAD_MS = 30 * 60 * 1000
+// otro personal —o el propio paciente, con la pantalla a la vista— podría ver
+// el expediente anterior. La sesión se cierra sola tras un rato sin actividad.
+//
+// El tiempo se configura por despliegue con VITE_INACTIVITY_TIMEOUT (ver
+// .env.example). Antes estaba escrito a mano aquí y la variable existía en los
+// .env sin que nadie la leyera: el valor configurado no tenía ningún efecto.
+const INACTIVIDAD_POR_DEFECTO_MS = 5 * 60 * 1000
+
+// Vite entrega las variables de entorno como cadena. Un valor vacío, no numérico
+// o negativo dejaría la sesión abierta para siempre (NaN en setTimeout) o la
+// cerraría al instante, así que se valida y se cae al valor por defecto.
+function leerInactividadMs() {
+  const crudo = import.meta.env.VITE_INACTIVITY_TIMEOUT
+  if (crudo === undefined || crudo === '') return INACTIVIDAD_POR_DEFECTO_MS
+
+  const ms = Number(crudo)
+  if (!Number.isFinite(ms) || ms <= 0) {
+    logWarn('inactividad', `VITE_INACTIVITY_TIMEOUT no es un número válido ("${crudo}"); se usan ${INACTIVIDAD_POR_DEFECTO_MS} ms`)
+    return INACTIVIDAD_POR_DEFECTO_MS
+  }
+  return ms
+}
+
+const INACTIVIDAD_MS = leerInactividadMs()
 
 export default function Layout({ children }) {
   const location = useLocation()
