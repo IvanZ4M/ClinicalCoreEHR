@@ -31,7 +31,8 @@ npm run setup <IP>     # genera .env.production apuntando al servidor de la clí
 - `src/context/AuthContext.jsx` — sesión sobre `pb.authStore` (colección `usuarios`, auth collection).
 - `src/lib/pb.js` — cliente único; persiste sesión en `localStorage.pb_auth`; al limpiarse el
   token redirige a `#/login`.
-- `src/components/layout/Layout.jsx` — auto-logout a los 30 min de inactividad.
+- `src/components/layout/Layout.jsx` — auto-logout por inactividad; el tiempo sale de
+  `VITE_INACTIVITY_TIMEOUT` y por defecto son 5 min.
 - `src/hooks/usePocketBase.js` — `useColeccion` / `useRegistro` genéricos.
 - `src/services/` — `citasService` (crear cita, slots de 07:00–19:00 c/30 min),
   `auditService` (`logAuditEvent`, errores silenciados a propósito).
@@ -55,6 +56,8 @@ npm run setup <IP>     # genera .env.production apuntando al servidor de la clí
 Flujo clínico: recepción agenda cita → enfermera hace triage (`/enfermeria`) → médico abre
 consulta (`/consulta/nueva?paciente=&cita=`) → diagnósticos CIE-10 + receta PDF →
 la cita pasa a `completada` automáticamente.
+⚠️ Decidido el 10/09 y **aún sin implementar**: en **consulta subsecuente** el triage pasa a ser
+**opcional**. Ver "Decisión de diseño del 10/09".
 
 ## Reglas de acceso (RLS en PocketBase)
 
@@ -150,7 +153,7 @@ Comprobar con `git log -1 --format=%B` después de commitear. Esto corta el prob
 adelante**; los 41 commits que ya los llevan siguen igual hasta la reescritura de historial
 pendiente, agendada junto con la de `pocketbase.exe` (Asana `1218178974697650`).
 
-## Estado actual (9 septiembre 2026) — leer antes de tocar código
+## Estado actual (10 septiembre 2026) — leer antes de tocar código
 
 Rama activa `feat/ui-redesign`, **commiteada y empujada a `origin`**. `main` en `65bb5ba`, que
 ya incluye la fusión del rediseño; `feat/ui-redesign` va por delante con el trabajo del 09/09 y
@@ -290,10 +293,84 @@ entrega al paciente y que lleva la cédula profesional:
 `AB-`). Es falso: la base guarda `"AB-"` (3 caracteres), jsPDF escribe el guion, y el PDF real
 archivado contiene literalmente `"Grupo sanguíneo: AB-"`. No se cambió nada por esto.
 
-**Correcciones de datos comprometidas para el 10/09** (son datos, no código; se hacen desde la
-pantalla de Usuarios): `sexo` de los dos médicos; para la Dra. Camacho, `apellidos` a `Camacho`,
-quitar el espacio final de `nombre` y `especialidad` a `Medicina General`; y las erratas de
-`Ana Cariilo Martinez` y `Minerva Lopez Juarez`, que arrastran del 3/09.
+~~**Correcciones de datos comprometidas para el 10/09**~~ — **Diego las aplicó el 10/09** desde
+la pantalla de Usuarios: `sexo` de los dos médicos; para la Dra. Camacho, `apellidos` a
+`Camacho`, el espacio final de `nombre` y `especialidad` a `Medicina General`; y las erratas de
+`Ana Cariilo Martinez` y `Minerva Lopez Juarez`. Son datos en la base, no código: **no se
+verificaron contra la base en esta sesión** y `seed-demo.js` los regenera, así que hay que
+volver a revisarlos después del sembrado de la mañana de la defensa.
+
+### ✅ Resuelto el 10 de septiembre — el bloqueo de sesión lee su configuración (Asana `1217970107763004`)
+
+Movimiento 1 del bloque Badillo. `Layout.jsx` tenía `INACTIVIDAD_MS = 30 * 60 * 1000` escrito
+a mano mientras `VITE_INACTIVITY_TIMEOUT` existía en los tres `.env` **sin que nadie la leyera**.
+
+- `Layout.jsx` lee ahora `import.meta.env.VITE_INACTIVITY_TIMEOUT` con la misma convención que
+  `src/lib/pb.js:6`, y **valida**: Vite entrega las variables como cadena, así que un valor
+  vacío, `0`, negativo o no numérico daría `NaN` en `setTimeout` —sesión abierta para siempre—
+  o cerraría al instante. Cualquiera de esos casos cae al valor por defecto y avisa con
+  `logWarn`. El único literal que queda es ese defecto: `INACTIVIDAD_POR_DEFECTO_MS`, **5 min**.
+- `.env.development` y `.env.production` bajados a `300000`. `.env.production` está en
+  `.gitignore`, así que ese cambio **no viaja al repositorio**: hay que rehacerlo en cada
+  máquina **que compile el instalador**, no en las de la clínica (ver el punto siguiente).
+- ⚠️ **`scripts/setup-clinic.js:23` también fijaba `1800000`.** Es el que regenera
+  `.env.production` con `npm run setup <IP>`: sin tocarlo, el primer despliegue en la clínica
+  habría devuelto los 30 minutos en silencio. Corregido a `300000`.
+- `.env.example` y `CHECKLIST-PRODUCCION.md` decían "default 1800000 = 30 min"; el valor por
+  defecto lo fija ahora el código, no el archivo.
+
+⚠️ **`VITE_INACTIVITY_TIMEOUT` es una entrada de COMPILACIÓN, no de despliegue.** Vite la
+sustituye por su literal al construir el bundle; `package.json` empaqueta `dist/**/*` ya
+compilado y no envía ningún `.env`, y no hay una sola lectura de `process.env` en `electron/`
+ni en `dev.mjs`. Verificado el 10/09 sobre el `.exe` construido **antes** de este cambio:
+`grep -o '1800*1e3' dist-electron/win-unpacked/resources/app/dist/assets/*.js` lo encuentra,
+es decir el viejo `30 * 60 * 1000` horneado en el JS en disco. De ahí tres cosas:
+
+1. La app **ya instalada** en un equipo sigue con el valor viejo hasta que se **reconstruya el
+   instalador** (`npm run setup <IP>` y luego `npm run build:electron`, en ese orden, según
+   `README-DESPLIEGUE.md` Paso 4) y se reinstale. No basta con copiar un archivo.
+2. Dejar un `.env.production` junto al `.exe` en el servidor de la clínica **no tiene ningún
+   efecto**. El comentario de `.env.example` habla de "por despliegue" y eso induce a error.
+3. Cambiar el tiempo en una clínica ya instalada exige recompilar. Si se quiere ajustable por
+   sitio sin recompilar, tendría que leerse en `electron/main.js` y pasarse al renderer por
+   IPC —como ya se hace con `ui:set-zoom`— o guardarse en la configuración del consultorio.
+   **No está hecho y no es esta tarjeta**; queda anotado por si un sinodal pregunta cómo se
+   cambia el tiempo en la clínica: hoy la respuesta honesta es "recompilando".
+
+Verificado: `npm run build` pasa y el bundle contiene el valor sustituido (`"300000"`) junto al
+respaldo `300*1e3`; la función real extraída de `Layout.jsx` se ejerció con nueve entradas
+(ausente, vacía, `0`, negativa, texto, con espacios) y todas caen donde deben.
+
+**✅ Verificado en vivo por Diego el 10/09.** Con `.env.development` bajado temporalmente a
+15 s: la sesión se cierra sola y, **al recargar la ventana, la app vuelve a pedir credenciales**.
+Eso confirma `pb.authStore.clear()` (`Layout.jsx:46`) **por comportamiento**, no solo por
+lectura del código: si únicamente redirigiera, la sesión habría sobrevivido a la recarga.
+`.env.development` restaurado a `300000`.
+
+Con esto el movimiento 1 queda **cerrado**: código, documentación y comprobación en vivo.
+
+**Efecto secundario a decidir (no es esta tarjeta):** con 5 minutos, un médico que lee un
+expediente largo sin tocar teclado ni ratón pierde la sesión y con ella una consulta a medio
+capturar — `NewConsultation` no guarda borrador. Un aviso de "tu sesión se cerrará en 30 s"
+antes del corte es lo habitual en un EHR y es respuesta directa si un sinodal lo pregunta.
+
+### Decisión de diseño del 10/09 — el triage es opcional en consulta subsecuente
+
+**En consulta subsecuente, el paso de enfermería va OPCIONAL, no obligatorio.** En primera vez
+sigue siendo parte del flujo.
+
+Fundamento (de Diego): la **NOM-004** pide los signos vitales en la nota de evolución
+*"según se considere necesario"*, no de forma incondicional. Obligar al triage en cada
+subsecuente inventa un requisito que la norma no impone y entorpece la consulta de control.
+
+> 📌 **Antes de la defensa: citar la cláusula literal y su numeral.** Es una afirmación sobre
+> una norma oficial y un sinodal puede pedirla textual; conviene llevarla verificada contra el
+> texto de la NOM-004-SSA3-2012, no de memoria.
+
+⚠️ **Sin implementar.** Hoy el flujo descrito arriba ("Flujo clínico") encadena
+recepción → triage → consulta. Falta ver qué implica en `/enfermeria`, en el estado de la cita
+(`en_espera` / `en_consulta`) y en la compuerta de validación de los 4 pasos de
+`NewConsultation`. **No está en Asana todavía.**
 
 ## Incidente de seguridad — exposición de `pb_data` (3 septiembre 2026)
 
@@ -380,16 +457,16 @@ reposo y de respaldos fuera del equipo, más abajo.
 
 | Pendiente | Estado verificado | Asana |
 |---|---|---|
-| **TLS en la red local** | Tráfico en `http://` plano: usuario, contraseña y expedientes viajan legibles. Caddy o mkcert. | `1217984345370767`, 15/09 |
+| **TLS en la red local** | Tráfico en `http://` plano: usuario, contraseña y expedientes viajan legibles. **Decidido el 10/09: Caddy.** Analizado y sin implementar; pendiente elegir IP o nombre de host. Ver "Decidido el 10/09: Caddy". | `1217984345370767`, 15/09 |
 | **Cifrado en reposo (BitLocker)** | `pb_data/data.db` es SQLite **sin cifrar**: con acceso físico se copia a una USB y se lee todo sin dejar rastro en `audit_log`. Documentar BitLocker como requisito de instalación. | `1217984345320036`, 15/09 |
 | **Auditoría de todas las escrituras** | Hoy `audit_log` solo registra `LOGIN_OK`, `LOGOUT` y `VER_EXPEDIENTE`. Falta toda creación y modificación de paciente, consulta, diagnóstico, receta y usuario. | `1217984345378164`, 16/09 |
 | **Respaldos automatizados y probados** | Existe `scripts/backup.bat` pero no está automatizado ni se ha restaurado nunca. **Dos defectos verificados el 09/09, ver abajo: anula el cifrado en reposo y copia en caliente.** Esquema 3-2-1 + restauración documentada. | `1217969931277095`, **16/09** |
 | Panel `/_/` expuesto | Accesible desde toda la LAN; desde ahí se salta el RLS por completo. | `1217969971867507`, 17/09 |
-| Bloqueo de sesión | `Layout.jsx:15` fija `INACTIVIDAD_MS = 30 * 60 * 1000` **e ignora `VITE_INACTIVITY_TIMEOUT`**, que ya existe en `.env.development` y `.env.production` sin que nadie la lea. En un consultorio con la pantalla a la vista del paciente deberían ser 5 min. | `1217970107763004`, 17/09 |
+| ~~Bloqueo de sesión~~ | **Resuelto el 10/09**, ver arriba: `Layout.jsx` lee `VITE_INACTIVITY_TIMEOUT` con 5 min por defecto. Pendiente solo la comprobación en vivo. | `1217970107763004`, 17/09 |
 | Vista de auditoría | El `audit_log` existe pero no se puede consultar desde la app. | `1217970107827075`, 16/09 |
 | **Sin Content-Security-Policy** | Verificado el 09/09: no hay CSP en ninguna capa — ni `<meta>` en `index.html`, ni `onHeadersReceived` en `electron/main.js`. El aviso de Electron **solo sale en desarrollo** (lo silencia en la app empaquetada), pero la ausencia de política es real en producción: una inyección en el renderer podría cargar código de cualquier origen y exfiltrar el expediente. `nodeIntegration:false` y `contextIsolation:true` limitan el daño, no la carga remota. | `1218348694623866`, 16/09 |
 
-#### Orden de ataque — acordado el 09/09, vigente para la sesión del 10/09
+#### Orden de ataque — acordado el 09/09, actualizado al cierre del 10/09
 
 Página consultable con el grafo de dependencias:
 https://claude.ai/code/artifact/6f5585b6-3d6d-42ea-b608-8e94bf527007
@@ -399,8 +476,8 @@ en seis. Solo hay tres dependencias reales entre las ocho; el resto es paraleliz
 
 | # | Movimiento | Cuándo |
 |---|---|---|
-| 1 | **Bloqueo de sesión** — cierra una tarjeta antes de entrar a lo pesado. No basta con bajar el número: `Layout.jsx` debe **leer `VITE_INACTIVITY_TIMEOUT`** en vez de tener el valor a mano, con 5 min por defecto. Una variable de entorno que el código ignora es una pregunta gratis para un sinodal. | primero, ~10 min |
-| 2 | Decidir Caddy o mkcert → **TLS** → **panel `/_/`** en el mismo movimiento | 15/09 |
+| ~~1~~ | ~~**Bloqueo de sesión**~~ — **hecho el 10/09.** Además de `Layout.jsx` hubo que corregir `scripts/setup-clinic.js`, que regenera `.env.production` y habría reintroducido los 30 min. | ✅ |
+| 2 | ~~Decidir Caddy o mkcert~~ **decidido: Caddy** (10/09) → **TLS** → **panel `/_/`** en el mismo movimiento. **Siguiente paso: decidir IP o nombre**, luego el Caddyfile con el *matcher* del panel. | 15/09 |
 | 3 | **Cifrado en reposo + respaldos**, juntos (respaldos ya movida del 17 al 16 en Asana) | 15–16/09 |
 | 4 | **Auditoría de escrituras** → **vista de auditoría**, en ese orden | 16/09 |
 | 5 | **CSP**: empezar ya por `script-src`, `object-src` y `frame-src`; `connect-src` al final | parcial ya, cierre tras TLS |
@@ -425,17 +502,91 @@ Las dependencias, y por qué:
   `connect-src` al final evita que un desajuste de esquema bloquee las peticiones **en
   silencio**, que es como fallan las CSP: sin error visible, solo una app que deja de cargar.
 
-> ⚠️ **Decisión pendiente: Caddy vs mkcert.** Inclinación actual hacia **Caddy**, porque cierra
-> el panel `/_/` en el mismo archivo y en la defensa se explica en una frase. **Sin analizar
-> todavía — se decide el 10/09.** Antes hay que responder tres cosas:
-> 1. **Qué instala el personal de la clínica.** Caddy es un binario y un servicio más que
->    alguien tiene que instalar y mantener; hoy `install-pocketbase-service.bat` solo registra
->    PocketBase con NSSM.
-> 2. **Qué pasa si Caddy no arranca.** Con un proxy delante, que falle deja el sistema entero
->    sin servicio en plena consulta. ¿Hay vuelta atrás rápida?
-> 3. **Si el certificado local hace que Electron se queje.** Un certificado de CA interna puede
->    disparar errores de confianza en el renderer; hay que comprobar cómo se instala esa CA en
->    cada equipo de la clínica.
+#### ✅ Decidido el 10/09: **Caddy**, no mkcert
+
+Dos razones, en este orden:
+
+1. **Cierra el panel `/_/` en el mismo Caddyfile.** Con mkcert y PocketBase sirviendo TLS
+   directo no hay proxy donde bloquear la ruta, y restringir el panel se vuelve otra tarea.
+2. **El modo de falla es ruidoso.** Caddy renueva sus hojas solo; mkcert emite un certificado
+   con fecha de caducidad y **no hay nadie técnico en la clínica** que note el vencimiento
+   hasta que la app deja de conectar.
+   > 📌 **Corrección de dato para la defensa:** en sesión se dijo "vence dentro de un año".
+   > No es un año — mkcert emite hojas de **~2 años y 3 meses** (la raíz, ~10 años). El
+   > argumento se sostiene igual, porque el problema es que **caduca y alguien tiene que
+   > renovarlo a mano**, no el plazo. Pero no decir "un año" delante de un sinodal.
+
+**Análisis del 10/09 (sin implementar todavía).**
+
+**⏳ PENDIENTE DE DECIDIR (es lo primero de la próxima sesión): IP contra nombre de host.**
+Recomendación: **nombre**. El nombre que se barajó en voz alta fue `clinica.local`, pero
+⚠️ **`.local` está reservado a mDNS por RFC 6762**: en Windows la resolución se va por el
+resolutor mDNS y el archivo `hosts` no siempre gana, lo que produce fallos intermitentes muy
+difíciles de explicar en una defensa. Si se elige la ruta nombre, usar **`clinica.lan`** o
+**`clinica.internal`** (este último reservado por ICANN para uso privado), no `.local`.
+
+| | Ruta IP | Ruta nombre |
+|---|---|---|
+| Certificado | la IP debe ir en el SAN como `iPAddress` (Chromium ya no mira el CN). Caddy con `tls internal` lo hace bien — **conocimiento, sin verificar aquí** | atado al nombre |
+| Resolución | ninguna | `hosts` por equipo, o **una entrada DNS en el router** (preferible: la laptop nueva no se toca) |
+| Laptop nueva | instalar la CA | instalar la CA + `hosts` (o nada, con DNS en el router) |
+| **Si cambia la IP** | certificado inválido + **recompilar el instalador y reinstalar en cada equipo**, porque `VITE_POCKETBASE_URL` está horneada | **una línea** en router/`hosts`; certificado válido, **sin recompilar** |
+
+Ese último renglón es el argumento decisivo, y se apoya en lo verificado hoy con el timeout:
+la URL se hornea al compilar. Con nombre fijo, además, `npm run setup <IP>` deja de tener
+sentido para la URL de la app: pasa a ser constante, no un parámetro por clínica.
+
+**De los 12 sitios con `http://…:8090`, solo 4 cambian distinto según la ruta:**
+`.env.production:5`, `.env.example:6-7`, `scripts/setup-clinic.js` (la ruta nombre le cambia el
+**contrato**: hoy exige un IPv4 y lo valida con regex en la línea 10) y los 4 documentos.
+
+> 🚨 **ORDEN DE EJECUCIÓN — forma parte del movimiento 2, no es una tarea aparte.**
+> Cerrar el 8090 (`install-pocketbase-service.bat:54` → `127.0.0.1:8090`) y cerrarlo en el
+> firewall se hace **DESPUÉS de comprobar que Caddy sirve bien**, **nunca antes**. Si se cierra
+> primero y Caddy no levanta, no queda ninguna vía de acceso al servidor: ni la app, ni el
+> panel, ni la API. Secuencia: levantar Caddy con el 8090 todavía abierto → comprobar que la
+> app entra por `https://` → recién entonces atar PocketBase a loopback y cerrar el puerto.
+
+Los que cambian **igual** en ambas rutas son los que de verdad cierran el agujero (sujetos al
+orden de arriba):
+- ⚠️ **`install-pocketbase-service.bat:54`**: `serve --http=0.0.0.0:8090` → `127.0.0.1:8090`.
+  Si PocketBase sigue escuchando en toda la LAN, **TLS es decorativo**: cualquiera va al 8090
+  en claro y se salta Caddy entero.
+- ⚠️ **`configure-firewall.bat:28`**: abrir 443 y 80, y **cerrar el 8090**. Misma razón.
+- `src/lib/pb.js:6`, `.env.development:2` y `scripts/seed-demo.js:27` (que corre en el servidor
+  y puede seguir yendo a `127.0.0.1:8090` directo): **sin cambios** en ninguna ruta.
+- Sitio 13 que la lista original no menciona: `dist/` y `dist-electron/` llevan la URL horneada.
+  **Ninguna ruta evita reconstruir el instalador.**
+
+**Electron: no hay que tocar `main.js`.** En Windows, Chromium valida contra el almacén del
+sistema; con la raíz de Caddy en *Entidades de certificación raíz de confianza* de **Equipo
+local** (no Usuario actual), `https://` se valida sola. `file://` → `https://` es un ascenso,
+no contenido mixto. **Prohibido**: `ignore-certificate-errors` (global, acepta cualquier
+certificado en todo el proceso — convierte la tarjeta de TLS en una vulnerabilidad nueva y es
+un autogol delante de Badillo), `webSecurity:false` (tira el `VULN-FIX (ÁREA 1)` de
+`main.js:42`) y cualquier `certificate-error` con `callback(true)` incondicional.
+Ojo al diagnóstico: `did-fail-load` (`main.js:53`) solo cubre la navegación principal, que es
+`file://`; una CA ausente se verá como un fallo de red genérico. Comprobar abriendo la URL en
+Edge antes que en la app.
+
+**Si Caddy no arranca:** el personal ve **una app que no conecta, no un error que diga Caddy**.
+Con PocketBase en loopback el cliente recibe conexión rechazada; `useColeccion` muestra el
+error con Reintentar y `AuthContext` ya no expulsa por fallo de red, así que no es pantalla en
+blanco — pero nadie va a deducir que hay que reiniciar Caddy.
+- **Sí arranca solo al encender**: un `install-caddy-service.bat` calcado del de PocketBase
+  hereda `Start SERVICE_AUTO_START` (línea 55) y el reinicio automático de NSSM. No hace falta
+  dependencia de orden: si Caddy sube antes, devuelve 502 hasta que PocketBase esté listo.
+- ⚠️ **Verificado el 10/09: en la máquina de desarrollo, `httpd` (Apache de XAMPP/Laragon,
+  PID 4696) ocupa `0.0.0.0:80` y `0.0.0.0:443`.** Caddy fallaría al hacer *bind* y NSSM lo
+  reintentaría en bucle. Correr `netstat` en el servidor de la clínica **antes** de instalar, y
+  parar Apache para probar en local.
+- **Vuelta atrás:** revertir el servicio y el firewall son dos comandos, pero la app horneada
+  apunta a `https://` y **no vuelve sola a http**. → **Archivar el `.exe` http actual como
+  artefacto de reversión antes de tocar nada.**
+
+Pendiente de comprobar cuando se implemente: que `tls internal` emita el SAN `iPAddress` si
+al final se elige la ruta IP, y que el *realtime* de PocketBase (SSE) pase por el proxy sin
+almacenamiento intermedio.
 
 #### El respaldo anula el cifrado en reposo (verificado el 09/09)
 
@@ -490,11 +641,10 @@ Dos defectos de `scripts/backup.bat` que hacen la tarjeta más urgente de lo que
   no son lo mismo), `K59.0`, `J20.9`, `L20.9`, `M25.5`. Sacar el catálogo a un archivo de datos
   y llegar a 60–80 códigos. Asana `1218354398964031`, vence 18/09, alta prioridad: si un
   sinodal pide registrar una gastritis en vivo, hoy no se puede.
-- **Datos incoherentes en el padrón**, detectados al revisar la receta impresa (son datos, no
-  código; se corrigen desde la pantalla de Usuarios): la Dra. Camacho figura con especialidad
-  `Pediatría` pero atiende adultos en la demo, su `apellidos` dice `Zamarron Camacho` en vez
-  de `Camacho`, su `nombre` tiene un espacio final, y el campo `sexo` está vacío para los dos
-  médicos desde la migración `1779000003`.
+- ~~**Datos incoherentes en el padrón**~~ — **corregidos por Diego el 10/09** desde la pantalla
+  de Usuarios (especialidad de la Dra. Camacho, `apellidos`, espacio final en `nombre`, `sexo`
+  de ambos médicos). ⚠️ Son datos, no código: `seed-demo.js` **los regenera**, así que hay que
+  volver a revisarlos tras ejecutarlo la mañana de la defensa.
 - Cada pantalla conserva su `calcularEdad` local duplicado; unificar contra `src/lib/edad.js`.
 
 ### Sin verificar
